@@ -1,0 +1,48 @@
+
+> teacher-payroll-app-n01-g11-complete@3.0.0 coverage
+> jest --coverage --runInBand
+
+PASS src/lib/__tests__/payroll.test.ts
+  calculateTeachingPay
+    ✓ tính tiền dạy theo công thức chuẩn (7 ms)
+    ✓ tính được lớp có hệ số cộng (1 ms)
+    ✓ không cho số tiết âm (48 ms)
+    ✓ không cho tiết quy đổi âm (2 ms)
+  lookup cấu hình
+    ✓ lấy định mức theo năm học (1 ms)
+    ✓ lỗi khi chưa có định mức (2 ms)
+    ✓ lấy hệ số bằng cấp theo năm học
+    ✓ lấy hệ số lớp theo sĩ số
+  quản lý giáo viên
+    ✓ sinh mã giáo viên tiếp theo (1 ms)
+    ✓ tính tuổi (1 ms)
+    ✓ bắt lỗi email và số điện thoại (1 ms)
+  báo cáo tiền dạy
+    ✓ tính được một dòng payroll từ phân công (1 ms)
+    ✓ tính toàn bộ dòng payroll (1 ms)
+    ✓ tổng tiền lớn hơn 0 (1 ms)
+    ✓ group theo khoa (1 ms)
+  coverage bổ sung cho business rule
+    ✓ bắt lỗi hệ số lớp không phải số (1 ms)
+    ✓ fallback hệ số bằng cấp mặc định khi chưa có cấu hình năm
+    ✓ lỗi khi bằng cấp không tồn tại (1 ms)
+    ✓ lỗi khi không có hệ số lớp phù hợp (1 ms)
+    ✓ tuổi bằng 0 nếu ngày sinh sai
+    ✓ validate giáo viên bắt thiếu tên, thiếu khoa, thiếu bằng cấp, sai tuổi (1 ms)
+    ✓ filter payroll theo năm, giáo viên, khoa và kỳ (1 ms)
+    ✓ filter payroll loại bỏ dữ liệu không khớp (1 ms)
+    ✓ các hàm kiểm tra liên kết dữ liệu (2 ms)
+    ✓ định dạng tiền và số (34 ms)
+    ✓ lỗi khi phân công tham chiếu giáo viên không tồn tại (2 ms)
+
+------------|---------|----------|---------|---------|-------------------
+File        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+------------|---------|----------|---------|---------|-------------------
+All files   |   97.03 |     91.3 |     100 |   98.05 |                   
+ payroll.ts |   97.03 |     91.3 |     100 |   98.05 | 13,36             
+------------|---------|----------|---------|---------|-------------------
+Test Suites: 1 passed, 1 total
+Tests:       26 passed, 26 total
+Snapshots:   0 total
+Time:        1.714 s
+Ran all test suites.

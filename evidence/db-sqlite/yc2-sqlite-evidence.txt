@@ -1,0 +1,36 @@
+==============================================================================
+YC2 EVIDENCE - CSDL SQLite that + truy van tinh tien day (Prisma data model)
+DB: prisma/dev.db (sqlite) | Tables: 10 | Records seeded:
+   - Degree: 4
+   - Department: 5
+   - Teacher: 8
+   - Subject: 6
+   - Semester: 3
+   - TeachingClass: 6
+   - Assignment: 6
+   - PaymentRate: 2
+   - DegreeCoefficient: 8
+   - ClassCoefficient: 8
+==============================================================================
+KET QUA TINH TIEN DAY THEO TUNG LOP (join 7 bang, tinh truc tiep tren SQLite):
+------------------------------------------------------------------------------
+GV     Ten               Lop           Tiet  HsHP  HsLop  DinhMuc  HsBC  QuyDoi    ThanhTien
+------------------------------------------------------------------------------
+GV0001 Nguyễn Văn An     ATTT301.01      45   1.2    0.0   143000   2.0    54.0   15,444,000
+GV0001 Nguyễn Văn An     CSDL101.01      45   1.0    0.0   143000   2.0    45.0   12,870,000
+GV0002 Bùi Thị Hoa       TKC201.01       45   1.1    0.0   150000   1.4    49.5   10,023,750
+GV0004 Phạm Thị Dung     CTDL102.02      60   1.2    0.1   143000   1.5    78.0   16,731,000
+GV0007 Lê Minh Cường     DTU101.01       45   1.0   -0.1   150000   2.1    40.5   12,757,500
+GV0008 Trần Thị Bình     WEB201.01       45   1.0    0.1   143000   1.5    49.5   10,617,750
+------------------------------------------------------------------------------
+TONG TIEN DAY THEO GIAO VIEN:
+   GV0001 - Nguyễn Văn An       :      28,314,000 d
+   GV0002 - Bùi Thị Hoa         :      10,023,750 d
+   GV0004 - Phạm Thị Dung       :      16,731,000 d
+   GV0007 - Lê Minh Cường       :      12,757,500 d
+   GV0008 - Trần Thị Bình       :      10,617,750 d
+------------------------------------------------------------------------------
+KIEM CHUNG NOI BO (tinh tay = SQL):
+   GV0001: CSDL101.01 = 45*(1.0+0)*143000*2.0 = 12,870,000
+           ATTT301.01 = 45*(1.2+0)*143000*2.0 = 15,444,000
+           Tong tay = 28,314,000 | SQL = 28,314,000 -> KHOP

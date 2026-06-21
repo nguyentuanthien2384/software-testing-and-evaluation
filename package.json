@@ -1,0 +1,16 @@
+{
+  "name": "n01-g11-complete-project-qa",
+  "version": "4.0.0",
+  "private": true,
+  "scripts": {
+    "app:install": "npm install --prefix source/teacher-payroll-app",
+    "app:dev": "npm run dev --prefix source/teacher-payroll-app",
+    "app:build": "npm run build --prefix source/teacher-payroll-app",
+    "test:unit": "npm test --prefix source/teacher-payroll-app",
+    "coverage": "npm run coverage --prefix source/teacher-payroll-app",
+    "yc7:install": "npm install --prefix tests/selenium-js",
+    "yc7:test": "npm run test:junit --prefix tests/selenium-js",
+    "yc8:test": "bash tests/jmeter/run-yc8.sh",
+    "qa:yc7-yc8": "bash scripts/run-yc7-yc8.sh"
+  }
+}

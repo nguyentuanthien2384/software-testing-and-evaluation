@@ -1,0 +1,16 @@
+[
+  {
+    "id": "YC7-PAY-001",
+    "name": "Tính tiền thủ công với dữ liệu hợp lệ",
+    "input": { "hours": 45, "subjectCoef": 1, "classCoef": 0.9, "rate": 143000, "degreeCoef": 2 },
+    "expectedConvertedHours": "85.5",
+    "expectedAmountText": "24.453.000"
+  },
+  {
+    "id": "YC7-PAY-002",
+    "name": "Tính tiền thủ công với hệ số lớp bằng 0",
+    "input": { "hours": 30, "subjectCoef": 1.2, "classCoef": 0, "rate": 143000, "degreeCoef": 1.5 },
+    "expectedConvertedHours": "36",
+    "expectedAmountText": "7.722.000"
+  }
+]

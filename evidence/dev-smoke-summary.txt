@@ -1,0 +1,21 @@
+Dev smoke test summary
+Date: 2026-06-20
+Command: npm run dev
+Checked URLs:
+/ -> 200
+/degrees -> 200
+/departments -> 200
+/teachers -> 200
+/subjects -> 200
+/semesters -> 200
+/classes -> 200
+/assignments -> 200
+/payment-rates -> 200
+/teacher-coefficients -> 200
+/class-coefficients -> 200
+/payroll -> 200
+/reports -> 200
+/system -> 200
+/api/health -> 200
+
+Unit test summary: 26/26 passed. Coverage for payroll.ts: statements 97.03%, branches 91.3%, functions 100%, lines 98.05%.

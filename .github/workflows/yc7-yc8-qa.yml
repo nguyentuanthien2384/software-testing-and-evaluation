@@ -1,0 +1,94 @@
+name: YC7 Selenium and YC8 JMeter
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  yc7-yc8:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: http://127.0.0.1:3000
+      APP_PORT: "3000"
+      JMETER_VERSION: "5.6.3"
+      MAX_AVERAGE_MS: "1000"
+      MAX_P95_MS: "2000"
+      MAX_ERROR_RATE: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java for JMeter
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install app dependencies
+        working-directory: source/teacher-payroll-app
+        run: npm install
+
+      - name: Build app
+        working-directory: source/teacher-payroll-app
+        run: npm run build
+
+      - name: Start app
+        working-directory: source/teacher-payroll-app
+        run: |
+          nohup npm run start -- -p $APP_PORT > ../../evidence/dev-smoke-summary.txt 2>&1 &
+
+      - name: Wait for app health
+        run: |
+          for i in $(seq 1 45); do
+            curl -fsS "$BASE_URL/api/health" >/dev/null && exit 0
+            sleep 2
+          done
+          cat evidence/dev-smoke-summary.txt || true
+          exit 1
+
+      - name: Install YC7 Selenium suite
+        working-directory: tests/selenium-js
+        run: npm install
+
+      - name: Run YC7 Selenium WebDriver
+        working-directory: tests/selenium-js
+        env:
+          BROWSER: chrome
+          BASE_URL: ${{ env.BASE_URL }}
+          SCREENSHOT_DIR: ../../evidence/screenshots
+        run: npm run test:junit
+
+      - name: Install JMeter
+        run: |
+          curl -fsSL "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz" -o /tmp/jmeter.tgz
+          tar -xzf /tmp/jmeter.tgz -C /tmp
+          echo "/tmp/apache-jmeter-${JMETER_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - name: Run YC8 JMeter baseline
+        env:
+          JMETER_HOST: 127.0.0.1
+          JMETER_PORT: ${{ env.APP_PORT }}
+          JMETER_USERS: "50"
+          JMETER_RAMP: "20"
+          JMETER_LOOPS: "10"
+          MAX_AVERAGE_MS: ${{ env.MAX_AVERAGE_MS }}
+          MAX_P95_MS: ${{ env.MAX_P95_MS }}
+          MAX_ERROR_RATE: ${{ env.MAX_ERROR_RATE }}
+        run: bash tests/jmeter/run-yc8.sh
+
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yc7-yc8-qa-artifacts
+          path: |
+            tests/selenium-js/reports/**
+            evidence/screenshots/**
+            evidence/jmeter-results/**
+            evidence/dev-smoke-summary.txt

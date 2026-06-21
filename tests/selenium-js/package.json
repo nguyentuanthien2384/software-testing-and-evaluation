@@ -1,0 +1,19 @@
+{
+  "name": "n01-g11-yc7-selenium-webdriver",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "YC7 Selenium WebDriver automated UI tests for N01_G11 teacher payroll app.",
+  "scripts": {
+    "test": "mocha \"src/specs/**/*.mjs\" --timeout 45000 --reporter spec",
+    "test:junit": "mocha \"src/specs/**/*.mjs\" --timeout 45000 --reporter mocha-junit-reporter --reporter-options mochaFile=reports/junit/yc7-selenium-results.xml",
+    "test:chrome": "BROWSER=chrome npm run test:junit",
+    "test:firefox": "BROWSER=firefox npm run test:junit",
+    "test:edge": "BROWSER=edge npm run test:junit"
+  },
+  "devDependencies": {
+    "mocha": "^11.0.0",
+    "mocha-junit-reporter": "^2.2.1",
+    "selenium-webdriver": "^4.27.0"
+  }
+}

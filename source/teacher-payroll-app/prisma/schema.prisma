@@ -1,0 +1,107 @@
+// Prisma schema - Hệ thống tính tiền dạy cho giáo viên (Nhóm 11)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Degree {
+  id           String              @id @default(cuid())
+  name         String
+  shortName    String              @unique
+  coefficient  Float
+  createdAt    String
+  teachers     Teacher[]
+  coefficients DegreeCoefficient[]
+}
+
+model Department {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  name        String
+  description String
+  createdAt   String
+  teachers    Teacher[]
+}
+
+model Teacher {
+  id           String       @id @default(cuid())
+  fullName     String
+  dateOfBirth  String
+  phone        String
+  email        String
+  status       String
+  departmentId String
+  degreeId     String
+  department   Department   @relation(fields: [departmentId], references: [id])
+  degree       Degree       @relation(fields: [degreeId], references: [id])
+  assignments  Assignment[]
+}
+
+model Subject {
+  id          String          @id @default(cuid())
+  code        String          @unique
+  name        String
+  credits     Int
+  totalHours  Int
+  coefficient Float
+  classes     TeachingClass[]
+}
+
+model Semester {
+  id        String          @id @default(cuid())
+  name      String
+  year      String
+  startDate String
+  endDate   String
+  classes   TeachingClass[]
+}
+
+model TeachingClass {
+  id           String       @id @default(cuid())
+  code         String
+  subjectId    String
+  semesterId   String
+  studentCount Int
+  note         String
+  subject      Subject      @relation(fields: [subjectId], references: [id])
+  semester     Semester     @relation(fields: [semesterId], references: [id])
+  assignments  Assignment[]
+}
+
+model Assignment {
+  id            String        @id @default(cuid())
+  teacherId     String
+  classId       String
+  teachingHours Float
+  note          String
+  teacher       Teacher       @relation(fields: [teacherId], references: [id])
+  teachingClass TeachingClass @relation(fields: [classId], references: [id])
+}
+
+model PaymentRate {
+  id            String @id @default(cuid())
+  year          String @unique
+  amount        Float
+  effectiveDate String
+}
+
+model DegreeCoefficient {
+  id          String @id @default(cuid())
+  year        String
+  degreeId    String
+  coefficient Float
+  degree      Degree @relation(fields: [degreeId], references: [id])
+  @@unique([year, degreeId])
+}
+
+model ClassCoefficient {
+  id          String @id @default(cuid())
+  year        String
+  minStudents Int
+  maxStudents Int
+  coefficient Float
+}
