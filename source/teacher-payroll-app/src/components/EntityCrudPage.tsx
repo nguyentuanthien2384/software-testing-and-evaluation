@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import { AppData, EntityKey } from '@/lib/types';
 import { generateNextTeacherCode, validateTeacher } from '@/lib/payroll';
 import { useAppData } from '@/lib/use-app-data';
+import { useAuth } from '@/lib/use-auth';
 
 type FieldType = 'text' | 'number' | 'email' | 'date' | 'select' | 'textarea';
 
@@ -35,6 +36,8 @@ type Row = Record<string, string | number> & { id: string };
 
 export function EntityCrudPage({ entityKey, title, description, fields, idPrefix, searchPlaceholder }: EntityCrudPageProps) {
   const { data, addItem, updateItem, removeItem } = useAppData();
+  const { can } = useAuth();
+  const canManage = can('data:manage');
   const rows = data[entityKey] as unknown as Row[];
   const [query, setQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -63,6 +66,10 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canManage) {
+      setMessage('Bạn không có quyền thay đổi dữ liệu (chỉ tài khoản quản trị viên).');
+      return;
+    }
     const errors = validateRow(entityKey, form, visibleFields, data);
     if (errors.length > 0) {
       setMessage(errors.join(' '));
@@ -80,6 +87,10 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   }
 
   function handleDelete(row: Row) {
+    if (!canManage) {
+      setMessage('Bạn không có quyền xoá dữ liệu (chỉ tài khoản quản trị viên).');
+      return;
+    }
     const guard = canDelete(entityKey, row.id, data);
     if (!guard.ok) {
       setMessage(guard.message);
@@ -102,23 +113,30 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
         </div>
       </div>
 
-      <section className="crud-layout">
-        <div className="panel">
-          <div className="panel-title-row">
-            <h2>{editingId ? 'Chỉnh sửa' : 'Thêm mới'}</h2>
-            <button className="ghost-btn" data-testid={`${entityKey}-new-button`} type="button" onClick={() => startCreate()}>Tạo mới</button>
+      <section className={canManage ? 'crud-layout' : 'crud-layout readonly'}>
+        {canManage ? (
+          <div className="panel">
+            <div className="panel-title-row">
+              <h2>{editingId ? 'Chỉnh sửa' : 'Thêm mới'}</h2>
+              <button className="ghost-btn" data-testid={`${entityKey}-new-button`} type="button" onClick={() => startCreate()}>Tạo mới</button>
+            </div>
+            <form className="form-grid" data-testid={`${entityKey}-form`} onSubmit={handleSubmit}>
+              {visibleFields.map((field) => (
+                <label className={field.type === 'textarea' ? 'full' : ''} key={field.name}>
+                  {field.label}
+                  {renderField(field, form, setForm, data)}
+                </label>
+              ))}
+              <button className="primary-btn full" data-testid={`${entityKey}-submit-button`} type="submit">{editingId ? 'Cập nhật' : 'Thêm'}</button>
+            </form>
+            {message && <p data-testid={`${entityKey}-form-message`} className={message.includes('thành công') || message.includes('Đã') ? 'success-message' : 'error-message'}>{message}</p>}
           </div>
-          <form className="form-grid" data-testid={`${entityKey}-form`} onSubmit={handleSubmit}>
-            {visibleFields.map((field) => (
-              <label className={field.type === 'textarea' ? 'full' : ''} key={field.name}>
-                {field.label}
-                {renderField(field, form, setForm, data)}
-              </label>
-            ))}
-            <button className="primary-btn full" data-testid={`${entityKey}-submit-button`} type="submit">{editingId ? 'Cập nhật' : 'Thêm'}</button>
-          </form>
-          {message && <p data-testid={`${entityKey}-form-message`} className={message.includes('thành công') || message.includes('Đã') ? 'success-message' : 'error-message'}>{message}</p>}
-        </div>
+        ) : (
+          <div className="panel" data-testid={`${entityKey}-readonly-notice`}>
+            <h2>Chế độ chỉ xem</h2>
+            <p className="muted">Tài khoản kiểm thử viên chỉ được xem dữ liệu. Mọi thao tác thêm, sửa, xoá đều do quản trị viên thực hiện.</p>
+          </div>
+        )}
 
         <div className="panel table-panel">
           <div className="toolbar">
@@ -130,20 +148,22 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
               <thead>
                 <tr>
                   {fields.map((field) => <th key={field.name}>{field.label}</th>)}
-                  <th>Thao tác</th>
+                  {canManage && <th>Thao tác</th>}
                 </tr>
               </thead>
               <tbody>
                 {filteredRows.length === 0 && (
-                  <tr><td colSpan={fields.length + 1}>Không có dữ liệu phù hợp.</td></tr>
+                  <tr><td colSpan={fields.length + (canManage ? 1 : 0)}>Không có dữ liệu phù hợp.</td></tr>
                 )}
                 {filteredRows.map((row) => (
                   <tr data-testid={`${entityKey}-row-${row.id}`} key={row.id}>
                     {fields.map((field) => <td key={field.name}>{displayValue(field, row[field.name], data)}</td>)}
-                    <td className="actions">
-                      <button type="button" data-testid={`${entityKey}-edit-${row.id}`} onClick={() => startEdit(row)}>Sửa</button>
-                      <button className="danger" data-testid={`${entityKey}-delete-${row.id}`} type="button" onClick={() => handleDelete(row)}>Xoá</button>
-                    </td>
+                    {canManage && (
+                      <td className="actions">
+                        <button type="button" data-testid={`${entityKey}-edit-${row.id}`} onClick={() => startEdit(row)}>Sửa</button>
+                        <button className="danger" data-testid={`${entityKey}-delete-${row.id}`} type="button" onClick={() => handleDelete(row)}>Xoá</button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

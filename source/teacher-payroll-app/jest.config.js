@@ -8,7 +8,8 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   collectCoverageFrom: [
-    'src/lib/payroll.ts'
+    'src/lib/payroll.ts',
+    'src/lib/auth.ts'
   ]
 };
 
