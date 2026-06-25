@@ -1,0 +1,33 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Next.js build output
+.next/
+**/build/
+**/dist/
+**/out/
+
+# Testing coverage and logs
+coverage/
+**/coverage/
+*.log
+jmeter.log
+
+# SQLite databases
+*.db
+*.db-journal
+source/teacher-payroll-app/prisma/dev.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
+
+# Zip files / Binaries
+*.zip
+*.tar.gz
+tools/
