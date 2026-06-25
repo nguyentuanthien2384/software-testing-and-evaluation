@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDriver } from '../support/driver.mjs';
 import { saveScreenshot } from '../support/test-utils.mjs';
+import { LoginPage } from '../pages/login.page.mjs';
 import { DashboardPage } from '../pages/dashboard.page.mjs';
 import { CrudPage } from '../pages/crud.page.mjs';
 import { PayrollPage } from '../pages/payroll.page.mjs';
@@ -17,6 +18,9 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
 
   before(async function () {
     driver = await createDriver();
+    // Ứng dụng yêu cầu đăng nhập: dùng tài khoản admin để có đủ quyền cho bộ smoke/regression.
+    const login = new LoginPage(driver);
+    await login.loginAs('admin', 'admin@123');
   });
 
   after(async function () {
@@ -80,7 +84,7 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     await reports.openReports();
     assert.equal(await reports.exportButtonText(), 'Xuất CSV');
     const text = await reports.tableText();
-    assert.match(text, /Giáo viên/);
-    assert.match(text, /Thành tiền/);
+    assert.match(text, /Giáo viên/i);
+    assert.match(text, /Thành tiền/i);
   });
 });

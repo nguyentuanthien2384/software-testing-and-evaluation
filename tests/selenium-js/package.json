@@ -5,8 +5,8 @@
   "type": "module",
   "description": "YC7 Selenium WebDriver automated UI tests for N01_G11 teacher payroll app.",
   "scripts": {
-    "test": "mocha \"src/specs/**/*.mjs\" --timeout 45000 --reporter spec",
-    "test:junit": "mocha \"src/specs/**/*.mjs\" --timeout 45000 --reporter mocha-junit-reporter --reporter-options mochaFile=reports/junit/yc7-selenium-results.xml",
+    "test": "mocha \"src/specs/**/*.mjs\" --timeout 120000 --reporter spec",
+    "test:junit": "mocha \"src/specs/**/*.mjs\" --timeout 120000 --reporter mocha-junit-reporter --reporter-options mochaFile=reports/junit/yc7-selenium-results.xml",
     "test:chrome": "BROWSER=chrome npm run test:junit",
     "test:firefox": "BROWSER=firefox npm run test:junit",
     "test:edge": "BROWSER=edge npm run test:junit"

@@ -73,9 +73,11 @@
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">2</intProp>
           </ResponseAssertion>
+          <hashTree/>
           <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration threshold" enabled="true">
             <stringProp name="DurationAssertion.duration">${__P(maxResponseMs,2000)}</stringProp>
           </DurationAssertion>
+          <hashTree/>
         </hashTree>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/payroll" enabled="true">
           <stringProp name="HTTPSampler.path">/api/payroll</stringProp>
@@ -101,9 +103,11 @@
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">2</intProp>
           </ResponseAssertion>
+          <hashTree/>
           <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration threshold" enabled="true">
             <stringProp name="DurationAssertion.duration">${__P(maxResponseMs,2000)}</stringProp>
           </DurationAssertion>
+          <hashTree/>
         </hashTree>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/reports" enabled="true">
           <stringProp name="HTTPSampler.path">/api/reports</stringProp>
@@ -120,9 +124,11 @@
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">2</intProp>
           </ResponseAssertion>
+          <hashTree/>
           <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration threshold" enabled="true">
             <stringProp name="DurationAssertion.duration">${__P(maxResponseMs,2000)}</stringProp>
           </DurationAssertion>
+          <hashTree/>
         </hashTree>
       </hashTree>
     </hashTree>
