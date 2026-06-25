@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="8.302" tests="12" failures="0">
+  <testsuite name="Root Suite" timestamp="2026-06-25T03:27:07" tests="0" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="LOGIN Selenium suite - đăng nhập &amp; phân quyền" timestamp="2026-06-25T03:27:07" tests="6" file="D:\software-testing-and-evaluation\tests\selenium-js\src\specs\login.e2e.mjs" time="3.118" failures="0">
+    <testcase name="LOGIN Selenium suite - đăng nhập &amp; phân quyền LOGIN-001 admin đăng nhập đúng và thấy vai trò Quản trị viên" time="0.407" classname="LOGIN-001 admin đăng nhập đúng và thấy vai trò Quản trị viên">
+    </testcase>
+    <testcase name="LOGIN Selenium suite - đăng nhập &amp; phân quyền LOGIN-002 tester đăng nhập đúng và thấy vai trò Kiểm thử viên" time="0.384" classname="LOGIN-002 tester đăng nhập đúng và thấy vai trò Kiểm thử viên">
+    </testcase>
+    <testcase name="LOGIN Selenium suite - đăng nhập &amp; phân quyền LOGIN-003 sai mật khẩu hiển thị thông báo lỗi" time="0.130" classname="LOGIN-003 sai mật khẩu hiển thị thông báo lỗi">
+    </testcase>
+    <testcase name="LOGIN Selenium suite - đăng nhập &amp; phân quyền LOGIN-004 truy cập trang nội bộ khi chưa đăng nhập sẽ bị chuyển về /login" time="0.062" classname="LOGIN-004 truy cập trang nội bộ khi chưa đăng nhập sẽ bị chuyển về /login">
+    </testcase>
+    <testcase name="LOGIN Selenium suite - đăng nhập &amp; phân quyền LOGIN-005 admin thấy form quản lý dữ liệu (data:manage)" time="0.451" classname="LOGIN-005 admin thấy form quản lý dữ liệu (data:manage)">
+    </testcase>
+    <testcase name="LOGIN Selenium suite - đăng nhập &amp; phân quyền LOGIN-006 tester chỉ xem, không có form quản lý dữ liệu" time="0.426" classname="LOGIN-006 tester chỉ xem, không có form quản lý dữ liệu">
+    </testcase>
+  </testsuite>
+  <testsuite name="YC7 Selenium WebDriver smoke/regression suite" timestamp="2026-06-25T03:27:10" tests="6" file="D:\software-testing-and-evaluation\tests\selenium-js\src\specs\yc7.smoke.e2e.mjs" time="5.181" failures="0">
+    <testcase name="YC7 Selenium WebDriver smoke/regression suite YC7-SMOKE-001 mở dashboard và hiển thị luồng nghiệp vụ chính" time="0.184" classname="YC7-SMOKE-001 mở dashboard và hiển thị luồng nghiệp vụ chính">
+    </testcase>
+    <testcase name="YC7 Selenium WebDriver smoke/regression suite YC7-CRUD-001 thêm mới bằng cấp và tìm kiếm lại trên bảng" time="1.248" classname="YC7-CRUD-001 thêm mới bằng cấp và tìm kiếm lại trên bảng">
+    </testcase>
+    <testcase name="YC7 Selenium WebDriver smoke/regression suite YC7-NAV-001 mở trang giáo viên và kiểm tra dữ liệu demo" time="0.231" classname="YC7-NAV-001 mở trang giáo viên và kiểm tra dữ liệu demo">
+    </testcase>
+    <testcase name="YC7 Selenium WebDriver smoke/regression suite YC7-PAY-001 Tính tiền thủ công với dữ liệu hợp lệ" time="1.022" classname="YC7-PAY-001 Tính tiền thủ công với dữ liệu hợp lệ">
+    </testcase>
+    <testcase name="YC7 Selenium WebDriver smoke/regression suite YC7-PAY-002 Tính tiền thủ công với hệ số lớp bằng 0" time="1.145" classname="YC7-PAY-002 Tính tiền thủ công với hệ số lớp bằng 0">
+    </testcase>
+    <testcase name="YC7 Selenium WebDriver smoke/regression suite YC7-REPORT-001 mở báo cáo và kiểm tra dữ liệu tổng hợp" time="0.246" classname="YC7-REPORT-001 mở báo cáo và kiểm tra dữ liệu tổng hợp">
+    </testcase>
+  </testsuite>
+</testsuites>
