@@ -1,9 +1,13 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { calculateAllPayrollLines, formatCurrency, sumAmount } from '@/lib/payroll';
-import { useAppData } from '@/lib/use-app-data';
-import { StatCard } from './StatCard';
+import Link from "next/link";
+import {
+  calculateAllPayrollLines,
+  formatCurrency,
+  sumAmount,
+} from "@/lib/payroll";
+import { useAppData } from "@/lib/use-app-data";
+import { StatCard } from "./StatCard";
 
 export function HomeDashboard() {
   const { data } = useAppData();
@@ -14,18 +18,43 @@ export function HomeDashboard() {
     <main className="page" data-testid="dashboard-page">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">N01 - Nhóm 11</p>
+          <p className="eyebrow">N01 - Nhóm 07</p>
           <h1>Phần mềm tính tiền dạy cho giáo viên</h1>
-          <p>Quản lý danh mục, phân công giảng dạy, tính tiền dạy và xuất báo cáo theo đặc tả dự án.</p>
+          <p>
+            Quản lý danh mục, phân công giảng dạy, tính tiền dạy và xuất báo cáo
+            theo đặc tả dự án.
+          </p>
         </div>
-        <Link className="primary-btn" data-testid="dashboard-payroll-link" href="/payroll">Tính tiền dạy</Link>
+        <Link
+          className="primary-btn"
+          data-testid="dashboard-payroll-link"
+          href="/payroll"
+        >
+          Tính tiền dạy
+        </Link>
       </div>
 
       <section className="stat-grid">
-        <StatCard title="Giáo viên" value={data.teachers.length} note="Hồ sơ đang quản lý" />
-        <StatCard title="Lớp học phần" value={data.classes.length} note="Theo các kỳ học" />
-        <StatCard title="Phân công" value={data.assignments.length} note="Luồng tính tiền" />
-        <StatCard title="Tổng tiền mẫu" value={formatCurrency(totalAmount)} note="Tính từ dữ liệu demo" />
+        <StatCard
+          title="Giáo viên"
+          value={data.teachers.length}
+          note="Hồ sơ đang quản lý"
+        />
+        <StatCard
+          title="Lớp học phần"
+          value={data.classes.length}
+          note="Theo các kỳ học"
+        />
+        <StatCard
+          title="Phân công"
+          value={data.assignments.length}
+          note="Luồng tính tiền"
+        />
+        <StatCard
+          title="Tổng tiền mẫu"
+          value={formatCurrency(totalAmount)}
+          note="Tính từ dữ liệu demo"
+        />
       </section>
 
       <section className="panel two-column">
@@ -41,8 +70,10 @@ export function HomeDashboard() {
         </div>
         <div>
           <h2>Công thức tính</h2>
-          <div className="formula-box">Tiền dạy mỗi lớp = Số tiết × (Hệ số học phần + Hệ số lớp) × Định mức × Hệ số bằng cấp</div>
-          <p className="muted">Công thức được dùng thống nhất trong màn hình tính tiền, báo cáo và unit test.</p>
+          <div className="formula-box">
+            Tiền dạy mỗi lớp = Số tiết × (Hệ số học phần + Hệ số lớp) × Định mức
+            × Hệ số bằng cấp
+          </div>
         </div>
       </section>
     </main>
