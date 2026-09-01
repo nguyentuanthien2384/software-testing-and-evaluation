@@ -1,11 +1,6 @@
 import { prisma } from './db';
 import { AppData, PayrollLine } from './types';
-import {
-  calculateTeachingPay,
-  findClassCoefficient,
-  findDegreeCoefficient,
-  findPaymentRate
-} from './payroll';
+import { calculatePayrollLine } from './payroll';
 
 /** Đọc toàn bộ dữ liệu từ CSDL SQLite và trả về đúng cấu trúc AppData mà UI dùng. */
 export async function getAllData(): Promise<AppData> {
@@ -61,39 +56,16 @@ export async function replaceAllData(data: AppData): Promise<void> {
 /** Tính bảng lương toàn trường trực tiếp từ dữ liệu CSDL (phục vụ API báo cáo). */
 export async function computePayrollLines(year?: string): Promise<PayrollLine[]> {
   const data = await getAllData();
-  const lines: PayrollLine[] = [];
-  for (const a of data.assignments) {
-    const cls = data.classes.find((c) => c.id === a.classId);
-    if (!cls) continue;
-    const subject = data.subjects.find((s) => s.id === cls.subjectId);
-    const semester = data.semesters.find((s) => s.id === cls.semesterId);
-    const teacher = data.teachers.find((t) => t.id === a.teacherId);
-    if (!subject || !semester || !teacher) continue;
-    if (year && semester.year !== year) continue;
-    const department = data.departments.find((d) => d.id === teacher.departmentId);
-    const degree = data.degrees.find((d) => d.id === teacher.degreeId);
-    try {
-      const rate = findPaymentRate(data, semester.year);
-      const degreeCoef = findDegreeCoefficient(data, teacher.degreeId, semester.year);
-      const classCoef = findClassCoefficient(data.classCoefficients, semester.year, cls.studentCount);
-      const { convertedHours, amount } = calculateTeachingPay({
-        hours: a.teachingHours,
-        subjectCoef: subject.coefficient,
-        classCoef,
-        rate,
-        degreeCoef
-      });
-      lines.push({
-        assignmentId: a.id, teacherId: teacher.id, teacherName: teacher.fullName,
-        departmentName: department?.name ?? '', degreeName: degree?.name ?? '',
-        semesterName: semester.name, year: semester.year, classCode: cls.code,
-        subjectName: subject.name, teachingHours: a.teachingHours,
-        subjectCoefficient: subject.coefficient, classCoefficient: classCoef,
-        paymentRate: rate, degreeCoefficient: degreeCoef, convertedHours, amount
-      });
-    } catch {
-      // thiếu định mức/hệ số cho năm học -> bỏ qua dòng, báo cáo sẽ phản ánh thiếu dữ liệu
-    }
-  }
-  return lines;
+  const assignments = year
+    ? data.assignments.filter((assignment) => {
+        const teachingClass = data.classes.find((item) => item.id === assignment.classId);
+        const semester = teachingClass
+          ? data.semesters.find((item) => item.id === teachingClass.semesterId)
+          : undefined;
+        // Giữ bản ghi không xác định được năm để hàm tính bên dưới báo lỗi tham chiếu rõ ràng.
+        return !semester || semester.year === year;
+      })
+    : data.assignments;
+
+  return assignments.map((assignment) => calculatePayrollLine(data, assignment));
 }

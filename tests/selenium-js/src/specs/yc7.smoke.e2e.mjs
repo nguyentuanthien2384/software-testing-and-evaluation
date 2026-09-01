@@ -55,10 +55,15 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     await degrees.submit();
     await degrees.waitForText('Thêm dữ liệu thành công.');
 
-    await degrees.search(shortName);
-    const tableText = await degrees.tableText();
-    assert.match(tableText, new RegExp(shortName));
-    assert.match(tableText, /2,5|2.5/);
+    try {
+      await degrees.search(shortName);
+      const tableText = await degrees.tableText();
+      assert.match(tableText, new RegExp(shortName));
+      assert.match(tableText, /2,5|2.5/);
+    } finally {
+      await degrees.deleteRow(degreeId);
+      await degrees.waitForText('Đã xoá dữ liệu.');
+    }
   });
 
   it('YC7-NAV-001 mở trang giáo viên và kiểm tra dữ liệu demo', async function () {

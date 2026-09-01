@@ -34,8 +34,16 @@ export function calculateTeachingPay(input: PayrollInput): PayrollResult {
 }
 
 export function round(value: number, digits = 2): number {
-  const factor = 10 ** digits;
-  return Math.round((value + Number.EPSILON) * factor) / factor;
+  if (!Number.isFinite(value)) return value;
+
+  const shiftDecimal = (current: number, places: number): number => {
+    const [coefficient, exponent = '0'] = current.toString().split('e');
+    return Number(`${coefficient}e${Number(exponent) + places}`);
+  };
+  const shifted = shiftDecimal(value, digits);
+  const roundedInteger = Math.sign(shifted) * Math.round(Math.abs(shifted));
+  const rounded = shiftDecimal(roundedInteger, -digits);
+  return rounded === 0 ? 0 : rounded;
 }
 
 export function findPaymentRate(data: AppData, year: string): number {
@@ -62,20 +70,32 @@ export function findClassCoefficient(coefficients: ClassCoefficient[], year: str
 }
 
 export function getAge(dateOfBirth: string, now = new Date()): number {
-  const birth = new Date(dateOfBirth);
-  if (Number.isNaN(birth.getTime())) return 0;
+  const matched = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth);
+  if (!matched) return 0;
+
+  const [, yearText, monthText, dayText] = matched;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const birth = new Date(year, month - 1, day);
+  if (
+    birth.getFullYear() !== year ||
+    birth.getMonth() !== month - 1 ||
+    birth.getDate() !== day
+  ) return 0;
+
   let age = now.getFullYear() - birth.getFullYear();
   const monthDiff = now.getMonth() - birth.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) age--;
   return age;
 }
 
-export function validateTeacher(teacher: Teacher): string[] {
+export function validateTeacher(teacher: Teacher, now = new Date()): string[] {
   const errors: string[] = [];
   if (!teacher.fullName.trim()) errors.push('Họ tên giáo viên là bắt buộc.');
   if (!/^0\d{9}$/.test(teacher.phone)) errors.push('Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacher.email)) errors.push('Email không hợp lệ.');
-  const age = getAge(teacher.dateOfBirth);
+  const age = getAge(teacher.dateOfBirth, now);
   if (age < 22 || age > 70) errors.push('Tuổi giáo viên phải trong khoảng 22 đến 70.');
   if (!teacher.departmentId) errors.push('Phải chọn khoa.');
   if (!teacher.degreeId) errors.push('Phải chọn bằng cấp.');

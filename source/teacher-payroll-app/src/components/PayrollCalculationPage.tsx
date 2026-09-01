@@ -15,7 +15,13 @@ export function PayrollCalculationPage() {
     () => lines.filter((line) => (!teacherId || line.teacherId === teacherId) && (!year || line.year === year)),
     [lines, teacherId, year]
   );
-  const manualResult = calculateTeachingPay(manual);
+  const { manualResult, manualError } = useMemo(() => {
+    try {
+      return { manualResult: calculateTeachingPay(manual), manualError: '' };
+    } catch (error) {
+      return { manualResult: { convertedHours: 0, amount: 0 }, manualError: error instanceof Error ? error.message : 'Lỗi tính toán.' };
+    }
+  }, [manual]);
   const total = filtered.reduce((sum, line) => sum + line.amount, 0);
   const years = Array.from(new Set(data.semesters.map((semester) => semester.year)));
 
@@ -74,6 +80,7 @@ export function PayrollCalculationPage() {
             <label>Hệ số bằng cấp<input id="degreeCoef" data-testid="payroll-degree-coef-input" type="number" step="0.1" value={manual.degreeCoef} onChange={(event) => setManual({ ...manual, degreeCoef: Number(event.target.value) })} /></label>
           </form>
           <div id="result" data-testid="payroll-result-box" className="result-box">
+            {manualError && <p data-testid="payroll-error" style={{ color: '#e53e3e' }}>{manualError}</p>}
             <p id="converted-hours" data-testid="payroll-converted-hours">Tiết quy đổi: <strong>{manualResult.convertedHours}</strong></p>
             <p id="amount" data-testid="payroll-amount">Thành tiền: <strong>{formatCurrency(manualResult.amount)}</strong></p>
           </div>

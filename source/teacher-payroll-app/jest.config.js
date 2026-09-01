@@ -9,7 +9,8 @@ const customJestConfig = {
   },
   collectCoverageFrom: [
     'src/lib/payroll.ts',
-    'src/lib/auth.ts'
+    'src/lib/auth.ts',
+    'src/lib/repository.ts'
   ]
 };
 

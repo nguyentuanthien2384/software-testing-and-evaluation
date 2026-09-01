@@ -9,6 +9,7 @@ import {
   generateNextTeacherCode,
   getAge,
   groupAmountBy,
+  round,
   sumAmount,
   validateTeacher
 } from '../payroll';
@@ -31,6 +32,13 @@ describe('calculateTeachingPay', () => {
 
   test('không cho tiết quy đổi âm', () => {
     expect(() => calculateTeachingPay({ hours: 45, subjectCoef: 0.1, classCoef: -0.5, rate: 100000, degreeCoef: 1 })).toThrow('Tiết quy đổi');
+  });
+
+  test('làm tròn chính xác tại ranh giới số thập phân', () => {
+    expect(round(10.075, 2)).toBe(10.08);
+    expect(round(-1.005, 2)).toBe(-1.01);
+    expect(round(-0, 2)).toBe(0);
+    expect(round(10000000000000.002, 2)).toBe(10000000000000);
   });
 });
 
@@ -58,7 +66,11 @@ describe('quản lý giáo viên', () => {
   });
 
   test('tính tuổi', () => {
-    expect(getAge('2000-01-01', new Date('2026-01-02'))).toBe(26);
+    expect(getAge('2000-01-01', new Date(2026, 0, 2))).toBe(26);
+  });
+
+  test('không chấp nhận ngày sinh không tồn tại', () => {
+    expect(getAge('2024-02-30', new Date(2026, 0, 2))).toBe(0);
   });
 
   test('bắt lỗi email và số điện thoại', () => {
@@ -139,7 +151,7 @@ describe('coverage bổ sung cho business rule', () => {
       departmentId: '',
       degreeId: '',
       status: 'Đang giảng dạy'
-    });
+    }, new Date(2026, 0, 1));
     expect(errors).toEqual(expect.arrayContaining([
       'Họ tên giáo viên là bắt buộc.',
       'Tuổi giáo viên phải trong khoảng 22 đến 70.',

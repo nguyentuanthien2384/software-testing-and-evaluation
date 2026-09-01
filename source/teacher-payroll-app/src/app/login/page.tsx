@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { FormEvent, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/use-auth';
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/use-auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, ready, login } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   // Đã đăng nhập thì chuyển thẳng về trang chủ.
   useEffect(() => {
-    if (ready && user) router.replace('/');
+    if (ready && user) router.replace("/");
   }, [ready, user, router]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -23,8 +23,8 @@ export default function LoginPage() {
       setError(result.error);
       return;
     }
-    setError('');
-    router.replace('/');
+    setError("");
+    router.replace("/");
   }
 
   return (
@@ -34,14 +34,20 @@ export default function LoginPage() {
           <div className="brand-icon">P</div>
           <div>
             <strong>Hệ thống Quản lý</strong>
-            <span>Tiền dạy giáo viên - N01 G11</span>
+            <span>Tiền dạy giáo viên</span>
           </div>
         </div>
 
         <h1 className="login-title">Đăng nhập</h1>
-        <p className="login-subtitle">Đăng nhập bằng tài khoản quản trị viên hoặc kiểm thử viên.</p>
+        <p className="login-subtitle">
+          Đăng nhập bằng tài khoản quản trị viên hoặc kiểm thử viên.
+        </p>
 
-        <form className="login-form" data-testid="login-form" onSubmit={handleSubmit}>
+        <form
+          className="login-form"
+          data-testid="login-form"
+          onSubmit={handleSubmit}
+        >
           <label>
             Tên đăng nhập
             <input
@@ -67,21 +73,19 @@ export default function LoginPage() {
           </label>
 
           {error && (
-            <p className="error-message" data-testid="login-error" role="alert">{error}</p>
+            <p className="error-message" data-testid="login-error" role="alert">
+              {error}
+            </p>
           )}
 
-          <button className="primary-btn login-submit" data-testid="login-submit" type="submit">
+          <button
+            className="primary-btn login-submit"
+            data-testid="login-submit"
+            type="submit"
+          >
             Đăng nhập
           </button>
         </form>
-
-        <div className="login-hint" data-testid="login-hint">
-          <p className="muted">Tài khoản demo:</p>
-          <ul>
-            <li><strong>admin</strong> / admin@123 — toàn quyền</li>
-            <li><strong>tester</strong> / tester@123 — chỉ xem &amp; kiểm thử</li>
-          </ul>
-        </div>
       </section>
     </main>
   );

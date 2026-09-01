@@ -50,6 +50,13 @@ Mở `http://localhost:3000`.
 ## Chạy unit test
 
 ```bash
+npm test
+npm run coverage
+```
+
+Hoặc chạy trực tiếp trong thư mục ứng dụng:
+
+```bash
 cd source/teacher-payroll-app
 npm test
 npm run coverage

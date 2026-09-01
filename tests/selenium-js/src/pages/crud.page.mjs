@@ -1,4 +1,4 @@
-import { By } from 'selenium-webdriver';
+import { By, until } from 'selenium-webdriver';
 import { BasePage } from './base.page.mjs';
 import { clearAndType } from '../support/test-utils.mjs';
 
@@ -34,6 +34,14 @@ export class CrudPage extends BasePage {
   async tableText() {
     const table = await this.byTestId(`${this.entityKey}-table`);
     return table.getText();
+  }
+
+  async deleteRow(id) {
+    const button = await this.byTestId(`${this.entityKey}-delete-${id}`);
+    await button.click();
+    await this.driver.wait(until.alertIsPresent(), 5000);
+    const confirmation = await this.driver.switchTo().alert();
+    await confirmation.accept();
   }
 
   async visibleRowsCount() {

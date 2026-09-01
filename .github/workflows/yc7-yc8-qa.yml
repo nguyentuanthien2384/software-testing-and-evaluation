@@ -32,7 +32,11 @@ jobs:
 
       - name: Install app dependencies
         working-directory: source/teacher-payroll-app
-        run: npm install
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: source/teacher-payroll-app
+        run: npm test -- --runInBand
 
       - name: Build app
         working-directory: source/teacher-payroll-app
@@ -54,7 +58,7 @@ jobs:
 
       - name: Install YC7 Selenium suite
         working-directory: tests/selenium-js
-        run: npm install
+        run: npm ci
 
       - name: Run YC7 Selenium WebDriver
         working-directory: tests/selenium-js
