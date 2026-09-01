@@ -14,4 +14,8 @@ export class ReportsPage extends BasePage {
   async exportButtonText() {
     return (await this.byTestId('reports-export-csv-button')).getText();
   }
+
+  async printButtonText() {
+    return (await this.byTestId('reports-print-button')).getText();
+  }
 }

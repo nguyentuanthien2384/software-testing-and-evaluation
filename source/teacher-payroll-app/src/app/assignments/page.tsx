@@ -34,7 +34,8 @@ const fields = [
     "name": "teachingHours",
     "label": "Số tiết",
     "type": "number",
-    "required": true
+    "required": true,
+    "min": "0.01"
   },
   {
     "name": "note",

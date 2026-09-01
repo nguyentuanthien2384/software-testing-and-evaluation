@@ -15,7 +15,7 @@ describe('LOGIN Selenium suite - đăng nhập & phân quyền', function () {
     if (driver) await driver.quit();
   });
 
-  // Mỗi test bắt đầu từ trạng thái sạch và tất định: xoá session TRƯỚC rồi mới vào /login.
+  // Mỗi test bắt đầu từ trạng thái sạch: xoá cả cache và cookie phiên HttpOnly.
   beforeEach(async function () {
     const login = new LoginPage(driver);
     // Bảo đảm đã có origin (http) để truy cập được localStorage.
@@ -23,6 +23,7 @@ describe('LOGIN Selenium suite - đăng nhập & phân quyền', function () {
       await login.open('/login');
     }
     await driver.executeScript('window.localStorage.clear();');
+    await driver.manage().deleteAllCookies();
     // Không còn session -> /login sẽ ở lại, không bị redirect về '/'.
     await login.open('/login');
     await login.byTestId('login-username');
@@ -74,5 +75,33 @@ describe('LOGIN Selenium suite - đăng nhập & phân quyền', function () {
     await login.loginAs('tester', 'tester@123');
     await login.open('/degrees');
     await login.byTestId('degrees-readonly-notice');
+  });
+
+  it('LOGIN-007 phiên đăng nhập hợp lệ được giữ sau khi tải lại trang', async function () {
+    const login = new LoginPage(driver);
+    await login.loginAs('admin', 'admin@123');
+    await driver.navigate().refresh();
+    assert.equal(await login.userRoleText(), 'Quản trị viên');
+  });
+
+  it('LOGIN-008 tester bị API từ chối khi cố ghi đè dữ liệu', async function () {
+    const login = new LoginPage(driver);
+    await login.loginAs('tester', 'tester@123');
+    const status = await driver.executeAsyncScript(`
+      const done = arguments[arguments.length - 1];
+      fetch('/api/state', { cache: 'no-store' })
+        .then(async (response) => {
+          const data = await response.json();
+          const version = response.headers.get('X-State-Version') || '';
+          return fetch('/api/state', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-State-Version': version },
+            body: JSON.stringify(data)
+          });
+        })
+        .then((response) => done(response.status))
+        .catch((error) => done(String(error)));
+    `);
+    assert.equal(status, 403);
   });
 });

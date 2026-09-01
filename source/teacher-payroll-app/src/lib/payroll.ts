@@ -153,6 +153,20 @@ export function calculateAllPayrollLines(data: AppData): PayrollLine[] {
   return data.assignments.map((assignment) => calculatePayrollLine(data, assignment));
 }
 
+/** Cho phép giao diện vẫn hoạt động và chỉ rõ bản ghi cấu hình lỗi thay vì làm sập cả trang. */
+export function calculateAllPayrollLinesSafely(data: AppData): { lines: PayrollLine[]; errors: string[] } {
+  const lines: PayrollLine[] = [];
+  const errors: string[] = [];
+  for (const assignment of data.assignments) {
+    try {
+      lines.push(calculatePayrollLine(data, assignment));
+    } catch (error) {
+      errors.push(`${assignment.id}: ${error instanceof Error ? error.message : 'Không thể tính tiền dạy.'}`);
+    }
+  }
+  return { lines, errors };
+}
+
 export function filterPayrollLines(lines: PayrollLine[], filters: { year?: string; teacherId?: string; departmentName?: string; semesterName?: string }): PayrollLine[] {
   return lines.filter((line) => {
     if (filters.year && line.year !== filters.year) return false;

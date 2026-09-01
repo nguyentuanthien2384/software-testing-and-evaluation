@@ -10,6 +10,13 @@ const customJestConfig = {
   collectCoverageFrom: [
     'src/lib/payroll.ts',
     'src/lib/auth.ts',
+    'src/lib/auth-server.ts',
+    'src/lib/session.ts',
+    'src/lib/app-data-validation.ts',
+    'src/lib/class-generation.ts',
+    'src/lib/coefficient-copy.ts',
+    'src/lib/report-export.ts',
+    'src/lib/state-version.ts',
     'src/lib/repository.ts'
   ]
 };

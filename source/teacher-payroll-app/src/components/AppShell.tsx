@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Permission } from '@/lib/auth';
 import { ROLE_LABELS } from '@/lib/auth';
 import { useAuth } from '@/lib/use-auth';
@@ -29,7 +29,8 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { href: '/subjects', label: 'Học phần' },
       { href: '/semesters', label: 'Kỳ học' },
       { href: '/classes', label: 'Lớp học phần' },
-      { href: '/assignments', label: 'Phân công GV' }
+      { href: '/assignments', label: 'Phân công GV' },
+      { href: '/class-statistics', label: 'Thống kê lớp' }
     ]
   },
   {
@@ -54,6 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, ready, can, logout } = useAuth();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const isLoginRoute = pathname === '/login';
 
@@ -78,22 +80,27 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     router.replace('/login');
   }
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-icon">P</div>
-          <div>
-            <strong>Hệ thống Quản lý</strong>
-            <span>Tiền dạy giáo viên</span>
+      <aside className={mobileNavOpen ? 'sidebar open' : 'sidebar'}>
+        <div className="sidebar-header">
+          <div className="brand">
+            <div className="brand-icon">P</div>
+            <div>
+              <strong>Hệ thống Quản lý</strong>
+              <span>Tiền dạy giáo viên</span>
+            </div>
           </div>
+          <button className="mobile-menu-btn" type="button" aria-controls="main-navigation" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen((open) => !open)}>
+            {mobileNavOpen ? 'Đóng' : 'Danh mục'}
+          </button>
         </div>
-        <nav>
+        <nav id="main-navigation">
           {navGroups.map((group) => {
             const items = group.items.filter((item) => !item.permission || can(item.permission));
             if (items.length === 0) return null;
@@ -101,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <section className="nav-group" key={group.title}>
                 <h3>{group.title}</h3>
                 {items.map((item) => (
-                  <Link className={pathname === item.href ? 'nav-item active' : 'nav-item'} data-testid={`nav-${item.href === '/' ? 'home' : item.href.slice(1).replaceAll('/', '-')}`} href={item.href} key={item.href}>
+                  <Link className={pathname === item.href ? 'nav-item active' : 'nav-item'} data-testid={`nav-${item.href === '/' ? 'home' : item.href.slice(1).replaceAll('/', '-')}`} href={item.href} key={item.href} onClick={() => setMobileNavOpen(false)}>
                     {item.label}
                   </Link>
                 ))}

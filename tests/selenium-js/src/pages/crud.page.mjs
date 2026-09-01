@@ -14,6 +14,8 @@ export class CrudPage extends BasePage {
     await this.open(this.path);
     await this.waitForText(this.title);
     await this.byTestId(`${this.entityKey}-form`);
+    const submit = await this.byTestId(`${this.entityKey}-submit-button`);
+    await this.driver.wait(until.elementIsEnabled(submit), 10000);
   }
 
   async fillField(name, value) {
@@ -34,6 +36,18 @@ export class CrudPage extends BasePage {
   async tableText() {
     const table = await this.byTestId(`${this.entityKey}-table`);
     return table.getText();
+  }
+
+  async selectField(name, value) {
+    const field = await this.byTestId(`field-${name}`);
+    await this.driver.executeScript(
+      `const element = arguments[0];
+       const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+       setter.call(element, arguments[1]);
+       element.dispatchEvent(new Event('change', { bubbles: true }));`,
+      field,
+      value
+    );
   }
 
   async deleteRow(id) {

@@ -6,7 +6,8 @@ Bản hoàn chỉnh theo báo cáo/đặc tả Nhóm 11. Source này triển kha
 
 - Next.js App Router
 - React + TypeScript
-- LocalStorage làm kho dữ liệu demo để chạy ngay, không cần cấu hình CSDL
+- Prisma + SQLite làm nguồn dữ liệu chính; LocalStorage chỉ là bản sao xem tạm khi mất kết nối
+- Phiên đăng nhập bằng cookie HttpOnly được ký tại máy chủ và phân quyền API
 - Jest cho unit test nghiệp vụ
 - Selenium WebDriver cho YC7 tại `../../tests/selenium-js`
 - Apache JMeter cho YC8 tại `../../tests/jmeter`
@@ -15,10 +16,16 @@ Bản hoàn chỉnh theo báo cáo/đặc tả Nhóm 11. Source này triển kha
 
 ```bash
 npm install
+npm run db:deploy
+npm run db:seed
 npm run dev
 ```
 
 Mở `http://localhost:3000`.
+
+Sao chép `.env.example` thành `.env` và đổi `AUTH_SESSION_SECRET`, `ADMIN_PASSWORD`, `TESTER_PASSWORD` trước khi triển khai. Hai tài khoản mặc định cho môi trường demo là `admin/admin@123` và `tester/tester@123`.
+
+Các tính năng chính gồm CRUD danh mục có kiểm tra nghiệp vụ, tạo nhiều lớp tự tăng mã, sao chép hệ số từ năm trước, khóa kỳ học, trạng thái khoa, thống kê giáo viên/lớp học phần, tính tiền an toàn và báo cáo CSV hoặc in/lưu PDF.
 
 ## Chạy kiểm thử nghiệp vụ bằng Jest
 

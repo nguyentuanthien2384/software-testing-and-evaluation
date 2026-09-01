@@ -1,10 +1,9 @@
 import {
-  ACCOUNTS,
-  authenticate,
   roleHasPermission,
   ROLE_PERMISSIONS,
   userCan
 } from '../auth';
+import { ACCOUNTS, authenticate } from '../auth-server';
 
 describe('authenticate - đăng nhập', () => {
   test('TC01 - admin đăng nhập đúng', () => {

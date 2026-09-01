@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {
-  calculateAllPayrollLines,
+  calculateAllPayrollLinesSafely,
   formatCurrency,
   sumAmount,
 } from "@/lib/payroll";
@@ -11,7 +11,7 @@ import { StatCard } from "./StatCard";
 
 export function HomeDashboard() {
   const { data } = useAppData();
-  const payrollLines = calculateAllPayrollLines(data);
+  const { lines: payrollLines, errors: payrollErrors } = calculateAllPayrollLinesSafely(data);
   const totalAmount = sumAmount(payrollLines);
 
   return (
@@ -56,6 +56,12 @@ export function HomeDashboard() {
           note="Tính từ dữ liệu demo"
         />
       </section>
+
+      {payrollErrors.length > 0 && (
+        <section className="panel error-message" role="alert">
+          Có {payrollErrors.length} phân công chưa thể tính do thiếu hoặc sai cấu hình. Vui lòng kiểm tra trang Tính tiền dạy.
+        </section>
+      )}
 
       <section className="panel two-column">
         <div>

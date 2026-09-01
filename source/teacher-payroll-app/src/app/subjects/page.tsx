@@ -25,19 +25,22 @@ const fields = [
     "name": "credits",
     "label": "Số tín chỉ",
     "type": "number",
-    "required": true
+    "required": true,
+    "min": "1"
   },
   {
     "name": "totalHours",
     "label": "Số tiết",
     "type": "number",
-    "required": true
+    "required": true,
+    "min": "1"
   },
   {
     "name": "coefficient",
     "label": "Hệ số học phần",
     "type": "number",
     "required": true,
+    "min": "0.1",
     "step": "0.1"
   }
 ];

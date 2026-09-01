@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { calculateAllPayrollLines, formatCurrency, groupAmountBy, sumAmount } from '@/lib/payroll';
+import { calculateAllPayrollLinesSafely, formatCurrency, groupAmountBy, sumAmount } from '@/lib/payroll';
 import { useAppData } from '@/lib/use-app-data';
+import { buildPayrollCsv } from '@/lib/report-export';
 import { StatCard } from './StatCard';
 
 export function ReportsPage() {
@@ -10,7 +11,7 @@ export function ReportsPage() {
   const [year, setYear] = useState('');
   const [department, setDepartment] = useState('');
   const [teacherId, setTeacherId] = useState('');
-  const lines = calculateAllPayrollLines(data);
+  const { lines, errors: calculationErrors } = calculateAllPayrollLinesSafely(data);
   const departments = Array.from(new Set(lines.map((line) => line.departmentName)));
   const years = Array.from(new Set(lines.map((line) => line.year)));
 
@@ -19,11 +20,18 @@ export function ReportsPage() {
     [lines, year, department, teacherId]
   );
 
+  const byTeacher = useMemo(() => {
+    const totals = new Map<string, { name: string; amount: number }>();
+    for (const line of filtered) {
+      const current = totals.get(line.teacherId) ?? { name: `${line.teacherId} - ${line.teacherName}`, amount: 0 };
+      current.amount += line.amount;
+      totals.set(line.teacherId, current);
+    }
+    return Array.from(totals.entries()).map(([id, item]) => ({ id, ...item })).sort((a, b) => b.amount - a.amount);
+  }, [filtered]);
+
   function exportCsv() {
-    const header = ['Ma GV', 'Giao vien', 'Khoa', 'Nam hoc', 'Lop', 'Hoc phan', 'So tiet', 'Tien day'];
-    const body = filtered.map((line) => [line.teacherId, line.teacherName, line.departmentName, line.year, line.classCode, line.subjectName, line.teachingHours, line.amount]);
-    const csv = [header, ...body].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([buildPayrollCsv(filtered)], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -40,8 +48,17 @@ export function ReportsPage() {
           <h1>Báo cáo tiền dạy</h1>
           <p>Báo cáo theo giáo viên trong năm, theo khoa và toàn trường.</p>
         </div>
-        <button className="primary-btn" data-testid="reports-export-csv-button" type="button" onClick={exportCsv}>Xuất CSV</button>
+        <div className="actions">
+          <button className="ghost-btn" data-testid="reports-print-button" type="button" onClick={() => window.print()}>In / lưu PDF</button>
+          <button className="primary-btn" data-testid="reports-export-csv-button" type="button" onClick={exportCsv}>Xuất CSV</button>
+        </div>
       </div>
+
+      {calculationErrors.length > 0 && (
+        <section className="panel error-message" role="alert">
+          Báo cáo đã bỏ qua {calculationErrors.length} phân công do thiếu hoặc sai cấu hình: {calculationErrors.join(' ')}
+        </section>
+      )}
 
       <section className="stat-grid">
         <StatCard title="Số dòng báo cáo" value={filtered.length} />
@@ -90,7 +107,7 @@ export function ReportsPage() {
         <div className="panel">
           <h2>Tổng hợp theo giáo viên</h2>
           <ul className="summary-list">
-            {groupAmountBy(filtered, 'teacherName').map((item) => <li key={item.name}><span>{item.name}</span><strong>{formatCurrency(item.amount)}</strong></li>)}
+            {byTeacher.map((item) => <li key={item.id}><span>{item.name}</span><strong>{formatCurrency(item.amount)}</strong></li>)}
           </ul>
         </div>
         <div className="panel">

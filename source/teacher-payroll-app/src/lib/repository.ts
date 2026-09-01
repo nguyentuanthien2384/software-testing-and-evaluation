@@ -20,9 +20,11 @@ export async function getAllData(): Promise<AppData> {
     prisma.classCoefficient.findMany()
   ]);
   return {
-    degrees, departments,
+    degrees,
+    departments: departments.map((item) => ({ ...item, status: item.status as AppData['departments'][number]['status'] })),
     teachers: teachers.map((t) => ({ ...t, status: t.status as AppData['teachers'][number]['status'] })),
-    subjects, semesters,
+    subjects,
+    semesters: semesters.map((item) => ({ ...item, status: item.status as AppData['semesters'][number]['status'] })),
     classes, assignments, paymentRates, degreeCoefficients, classCoefficients
   };
 }

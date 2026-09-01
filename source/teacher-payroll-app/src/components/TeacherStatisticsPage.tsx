@@ -17,13 +17,13 @@ export function TeacherStatisticsPage() {
 
   const byDepartment = data.departments.map((department) => ({
     name: department.name,
-    count: data.teachers.filter((teacher) => teacher.departmentId === department.id).length
-  }));
+    count: filteredTeachers.filter((teacher) => teacher.departmentId === department.id).length
+  })).filter((item) => item.count > 0);
 
   const byDegree = data.degrees.map((degree) => ({
     name: degree.shortName,
-    count: data.teachers.filter((teacher) => teacher.degreeId === degree.id).length
-  }));
+    count: filteredTeachers.filter((teacher) => teacher.degreeId === degree.id).length
+  })).filter((item) => item.count > 0);
 
   return (
     <main className="page">
@@ -36,25 +36,25 @@ export function TeacherStatisticsPage() {
       </div>
 
       <section className="stat-grid">
-        <StatCard title="Tổng giáo viên" value={data.teachers.length} />
-        <StatCard title="Đang giảng dạy" value={data.teachers.filter((teacher) => teacher.status === 'Đang giảng dạy').length} />
-        <StatCard title="Số khoa" value={data.departments.length} />
-        <StatCard title="Số bằng cấp" value={data.degrees.length} />
+        <StatCard title="Giáo viên phù hợp" value={filteredTeachers.length} />
+        <StatCard title="Đang giảng dạy" value={filteredTeachers.filter((teacher) => teacher.status === 'Đang giảng dạy').length} />
+        <StatCard title="Số khoa" value={new Set(filteredTeachers.map((teacher) => teacher.departmentId)).size} />
+        <StatCard title="Số bằng cấp" value={new Set(filteredTeachers.map((teacher) => teacher.degreeId)).size} />
       </section>
 
       <section className="panel">
         <div className="toolbar start">
-          <select value={departmentId} onChange={(event) => setDepartmentId(event.target.value)}>
+          <select aria-label="Lọc giáo viên theo khoa" data-testid="teacher-statistics-department-filter" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)}>
             <option value="">Tất cả khoa</option>
             {data.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
           </select>
-          <select value={degreeId} onChange={(event) => setDegreeId(event.target.value)}>
+          <select aria-label="Lọc giáo viên theo bằng cấp" data-testid="teacher-statistics-degree-filter" value={degreeId} onChange={(event) => setDegreeId(event.target.value)}>
             <option value="">Tất cả bằng cấp</option>
             {data.degrees.map((degree) => <option key={degree.id} value={degree.id}>{degree.name}</option>)}
           </select>
         </div>
         <div className="table-wrapper">
-          <table>
+          <table data-testid="teacher-statistics-table">
             <thead>
               <tr><th>Mã GV</th><th>Họ tên</th><th>Khoa</th><th>Bằng cấp</th><th>Tuổi</th><th>Trạng thái</th></tr>
             </thead>

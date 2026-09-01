@@ -32,6 +32,22 @@ const fields = [
     "label": "Ngày kết thúc",
     "type": "date",
     "required": true
+  },
+  {
+    "name": "status",
+    "label": "Xử lý",
+    "type": "select",
+    "required": true,
+    "options": [
+      { "value": "Mở", "label": "Mở" },
+      { "value": "Đã khóa", "label": "Đã khóa" }
+    ]
+  },
+  {
+    "name": "periodStatus",
+    "label": "Tiến độ",
+    "type": "text",
+    "tableOnly": true
   }
 ];
 

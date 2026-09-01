@@ -24,6 +24,7 @@ export type Department = {
   name: string;
   description: string;
   createdAt: string;
+  status: 'Đang hoạt động' | 'Ngừng hoạt động';
 };
 
 export type Teacher = {
@@ -52,6 +53,7 @@ export type Semester = {
   year: string;
   startDate: string;
   endDate: string;
+  status: 'Mở' | 'Đã khóa';
 };
 
 export type TeachingClass = {

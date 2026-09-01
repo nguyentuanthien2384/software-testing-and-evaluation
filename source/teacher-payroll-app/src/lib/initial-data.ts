@@ -8,11 +8,11 @@ export const initialData: AppData = {
     { id: 'DEG-CN', name: 'Cử nhân', shortName: 'CN', coefficient: 1.1, createdAt: '2025-06-21' }
   ],
   departments: [
-    { id: 'DEP-CNTT', code: 'CNTT', name: 'Khoa Công nghệ thông tin', description: 'Đào tạo và nghiên cứu về công nghệ thông tin', createdAt: '2025-06-21' },
-    { id: 'DEP-XD', code: 'XD', name: 'Khoa Xây dựng', description: 'Đào tạo về kỹ thuật xây dựng', createdAt: '2025-06-21' },
-    { id: 'DEP-DTVT', code: 'DTVT', name: 'Khoa Điện tử - Viễn thông', description: 'Đào tạo về điện tử và viễn thông', createdAt: '2025-06-21' },
-    { id: 'DEP-CK', code: 'CK', name: 'Khoa Cơ khí', description: 'Đào tạo về cơ khí và chế tạo máy', createdAt: '2025-06-21' },
-    { id: 'DEP-NN', code: 'NN', name: 'Ngoại ngữ', description: 'Đào tạo ngoại ngữ', createdAt: '2025-06-24' }
+    { id: 'DEP-CNTT', code: 'CNTT', name: 'Khoa Công nghệ thông tin', description: 'Đào tạo và nghiên cứu về công nghệ thông tin', createdAt: '2025-06-21', status: 'Đang hoạt động' },
+    { id: 'DEP-XD', code: 'XD', name: 'Khoa Xây dựng', description: 'Đào tạo về kỹ thuật xây dựng', createdAt: '2025-06-21', status: 'Đang hoạt động' },
+    { id: 'DEP-DTVT', code: 'DTVT', name: 'Khoa Điện tử - Viễn thông', description: 'Đào tạo về điện tử và viễn thông', createdAt: '2025-06-21', status: 'Đang hoạt động' },
+    { id: 'DEP-CK', code: 'CK', name: 'Khoa Cơ khí', description: 'Đào tạo về cơ khí và chế tạo máy', createdAt: '2025-06-21', status: 'Đang hoạt động' },
+    { id: 'DEP-NN', code: 'NN', name: 'Ngoại ngữ', description: 'Đào tạo ngoại ngữ', createdAt: '2025-06-24', status: 'Đang hoạt động' }
   ],
   teachers: [
     { id: 'GV0001', fullName: 'Nguyễn Văn An', dateOfBirth: '1980-03-12', phone: '0123456789', email: 'nguyenvanan@example.com', departmentId: 'DEP-CNTT', degreeId: 'DEG-TS', status: 'Đang giảng dạy' },
@@ -33,9 +33,9 @@ export const initialData: AppData = {
     { id: 'SUB-TKC', code: 'TKC201', name: 'Thiết kế công trình', credits: 3, totalHours: 45, coefficient: 1.1 }
   ],
   semesters: [
-    { id: 'SEM-2024-1', name: 'Học kỳ 1', year: '2024-2025', startDate: '2024-09-01', endDate: '2024-12-31' },
-    { id: 'SEM-2024-2', name: 'Học kỳ 2', year: '2024-2025', startDate: '2025-01-01', endDate: '2025-05-31' },
-    { id: 'SEM-2025-1', name: 'Học kỳ 1', year: '2025-2026', startDate: '2025-09-01', endDate: '2025-12-31' }
+    { id: 'SEM-2024-1', name: 'Học kỳ 1', year: '2024-2025', startDate: '2024-09-01', endDate: '2024-12-31', status: 'Đã khóa' },
+    { id: 'SEM-2024-2', name: 'Học kỳ 2', year: '2024-2025', startDate: '2025-01-01', endDate: '2025-05-31', status: 'Đã khóa' },
+    { id: 'SEM-2025-1', name: 'Học kỳ 1', year: '2025-2026', startDate: '2025-09-01', endDate: '2025-12-31', status: 'Mở' }
   ],
   classes: [
     { id: 'CLS-CSDL-01', code: 'CSDL101.01', subjectId: 'SUB-CSDL', semesterId: 'SEM-2024-1', studentCount: 55, note: 'Lớp chuẩn' },

@@ -41,7 +41,8 @@ const fields = [
     "name": "studentCount",
     "label": "Sĩ số",
     "type": "number",
-    "required": true
+    "required": true,
+    "min": "0"
   },
   {
     "name": "note",
@@ -56,9 +57,10 @@ export default function Page() {
     <EntityCrudPage
       entityKey="classes"
       title="Quản lý Lớp học phần"
-      description="Quản lý lớp học phần, học phần, kỳ học và sĩ số."
+      description="Quản lý lớp học phần, học phần, kỳ học, sĩ số và tạo nhanh nhiều lớp liên tiếp."
       fields={fields as any}
       idPrefix="CLS"
+      allowBulkCreate
     />
   );
 }

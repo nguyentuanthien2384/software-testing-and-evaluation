@@ -32,6 +32,16 @@ const fields = [
     "label": "Ngày tạo",
     "type": "date",
     "required": true
+  },
+  {
+    "name": "status",
+    "label": "Trạng thái",
+    "type": "select",
+    "required": true,
+    "options": [
+      { "value": "Đang hoạt động", "label": "Đang hoạt động" },
+      { "value": "Ngừng hoạt động", "label": "Ngừng hoạt động" }
+    ]
   }
 ];
 

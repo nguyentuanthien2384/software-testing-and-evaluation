@@ -26,6 +26,7 @@ const fields = [
     "label": "Hệ số",
     "type": "number",
     "required": true,
+    "min": "0.1",
     "step": "0.1"
   },
   {

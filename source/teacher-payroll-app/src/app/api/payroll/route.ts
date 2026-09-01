@@ -1,8 +1,11 @@
 export const dynamic = 'force-dynamic';
 
 import { calculateTeachingPay } from '@/lib/payroll';
+import { requirePermission } from '@/lib/session';
 
 export async function POST(request: Request) {
+  const authorization = requirePermission(request, 'payroll:calculate');
+  if (authorization instanceof Response) return authorization;
   try {
     const body = await request.json();
     const result = calculateTeachingPay({
@@ -18,6 +21,8 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authorization = requirePermission(request, 'payroll:calculate');
+  if (authorization instanceof Response) return authorization;
   return Response.json({ formula: 'Số tiết × (Hệ số học phần + Hệ số lớp) × Định mức × Hệ số bằng cấp' });
 }

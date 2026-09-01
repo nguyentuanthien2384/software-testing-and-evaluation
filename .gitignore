@@ -13,6 +13,8 @@ coverage/
 **/coverage/
 *.log
 jmeter.log
+**/tsconfig.tsbuildinfo
+evidence/screenshots/
 
 # SQLite databases
 *.db

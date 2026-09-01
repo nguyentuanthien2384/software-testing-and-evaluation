@@ -28,20 +28,23 @@ Dự án chính là “Phần mềm tính tiền dạy cho giáo viên”, xây 
 5. Thống kê giáo viên.
 6. Quản lý học phần.
 7. Quản lý kỳ học.
-8. Quản lý lớp học phần.
+8. Quản lý lớp học phần, hỗ trợ tạo nguyên lô với mã tăng tự động.
 9. Phân công giảng viên.
-10. Thiết lập định mức tiết.
-11. Thiết lập hệ số giáo viên.
-12. Thiết lập hệ số lớp.
-13. Tính tiền dạy.
-14. Báo cáo tiền dạy theo giáo viên/khoa/toàn trường.
-15. Hệ thống/reset dữ liệu demo.
+10. Thống kê lớp học phần và tình trạng phân công.
+11. Thiết lập định mức tiết.
+12. Thiết lập hệ số giáo viên, hỗ trợ sao chép từ năm học liền trước.
+13. Thiết lập hệ số lớp.
+14. Tính tiền dạy.
+15. Báo cáo tiền dạy theo giáo viên/khoa/toàn trường, xuất CSV và in/lưu PDF.
+16. Hệ thống/reset dữ liệu demo.
 
 ## Chạy app
 
 ```bash
 cd source/teacher-payroll-app
 npm install
+npm run db:deploy
+npm run db:seed
 npm run dev
 ```
 
@@ -120,11 +123,12 @@ Workflow mẫu đã được thêm tại:
 Workflow này thực hiện:
 
 1. Cài Node.js và Java.
-2. Build và start Next.js app.
-3. Chạy YC7 Selenium WebDriver trên Chrome headless.
-4. Cài JMeter.
-5. Chạy YC8 JMeter baseline.
-6. Upload JUnit XML, screenshot, `.jtl`, HTML dashboard và app log thành artifact.
+2. Chạy unit test, migrate và seed CSDL kiểm thử riêng.
+3. Build và start Next.js app.
+4. Chạy YC7 Selenium WebDriver trên Chrome headless.
+5. Cài JMeter.
+6. Chạy YC8 JMeter baseline có đăng nhập API.
+7. Upload JUnit XML, screenshot, `.jtl`, HTML dashboard và app log thành artifact.
 
 ## Lưu ý nộp bài
 
@@ -138,7 +142,7 @@ Bản này đã bổ sung trực tiếp mã test và cấu hình vào source zip
 ```bash
 cd source/teacher-payroll-app
 npm install
-npx prisma migrate dev --name init
+npm run db:deploy
 npm run db:seed
 npm run dev
 ```

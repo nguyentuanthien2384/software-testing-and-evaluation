@@ -10,15 +10,19 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // Đã đăng nhập thì chuyển thẳng về trang chủ.
   useEffect(() => {
     if (ready && user) router.replace("/");
   }, [ready, user, router]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const result = login(username, password);
+    if (submitting) return;
+    setSubmitting(true);
+    const result = await login(username, password);
+    setSubmitting(false);
     if (!result.ok) {
       setError(result.error);
       return;
@@ -82,8 +86,9 @@ export default function LoginPage() {
             className="primary-btn login-submit"
             data-testid="login-submit"
             type="submit"
+            disabled={submitting}
           >
-            Đăng nhập
+            {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
         </form>
       </section>
