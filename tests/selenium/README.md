@@ -19,6 +19,10 @@ pip install selenium webdriver-manager
 python tests/selenium/selenium_teacher_payroll_test.py
 ```
 
+Script tự đăng nhập bằng tài khoản demo quản trị, mặc định chạy headless và luôn
+dọn bản ghi bằng cấp tạm của chính lần chạy. Có thể đặt `HEADLESS=false` để xem
+trình duyệt hoặc `BASE_URL` để đổi địa chỉ ứng dụng.
+
 ## Khuyến nghị cho YC7
 
 Dùng bộ mới:

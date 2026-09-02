@@ -2,7 +2,7 @@
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="N01_G11 Teacher Payroll Performance Test" enabled="true">
-      <stringProp name="TestPlan.comments">Kiểm thử hiệu năng API tính tiền dạy và API báo cáo bằng JMeter.</stringProp>
+      <stringProp name="TestPlan.comments">Portable load plan for the current authenticated health, payroll, and reports APIs. Override with -Jprotocol, -Jhost, -Jport, -Jusers, -Jramp, -Jloops, and -JmaxResponseMs.</stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
@@ -11,31 +11,55 @@
       </elementProp>
     </TestPlan>
     <hashTree>
+      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
+        <stringProp name="HTTPSampler.domain">${__P(host,127.0.0.1)}</stringProp>
+        <stringProp name="HTTPSampler.port">${__P(port,3000)}</stringProp>
+        <stringProp name="HTTPSampler.protocol">${__P(protocol,http)}</stringProp>
+        <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
+        <stringProp name="HTTPSampler.connect_timeout">${__P(connectTimeout,5000)}</stringProp>
+        <stringProp name="HTTPSampler.response_timeout">${__P(responseTimeout,10000)}</stringProp>
+      </ConfigTestElement>
+      <hashTree/>
+      <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+        <collectionProp name="HeaderManager.headers">
+          <elementProp name="Content-Type" elementType="Header">
+            <stringProp name="Header.name">Content-Type</stringProp>
+            <stringProp name="Header.value">application/json</stringProp>
+          </elementProp>
+          <elementProp name="Accept" elementType="Header">
+            <stringProp name="Header.name">Accept</stringProp>
+            <stringProp name="Header.value">application/json</stringProp>
+          </elementProp>
+        </collectionProp>
+      </HeaderManager>
+      <hashTree/>
       <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="HTTP Cookie Manager" enabled="true">
         <collectionProp name="CookieManager.cookies"/>
         <boolProp name="CookieManager.clearEachIteration">false</boolProp>
         <boolProp name="CookieManager.controlledByThreadGroup">false</boolProp>
       </CookieManager>
       <hashTree/>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="50 Users - Payroll API" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Parameterized Teacher Payroll Load" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
-          <stringProp name="LoopController.loops">10</stringProp>
+          <stringProp name="LoopController.loops">${__P(loops,10)}</stringProp>
         </elementProp>
-        <stringProp name="ThreadGroup.num_threads">50</stringProp>
-        <stringProp name="ThreadGroup.ramp_time">20</stringProp>
+        <stringProp name="ThreadGroup.num_threads">${__P(users,50)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${__P(ramp,20)}</stringProp>
         <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
       </ThreadGroup>
       <hashTree>
         <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Login once per user" enabled="true"/>
         <hashTree>
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/auth/login" enabled="true">
-            <stringProp name="HTTPSampler.domain">localhost</stringProp>
-            <stringProp name="HTTPSampler.port">3000</stringProp>
-            <stringProp name="HTTPSampler.protocol">http</stringProp>
             <stringProp name="HTTPSampler.path">/api/auth/login</stringProp>
             <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
             <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
             <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
               <collectionProp name="Arguments.arguments">
@@ -48,60 +72,111 @@
             </elementProp>
           </HTTPSamplerProxy>
           <hashTree>
-            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Login headers" enabled="true">
-              <collectionProp name="HeaderManager.headers">
-                <elementProp name="Content-Type" elementType="Header"><stringProp name="Header.name">Content-Type</stringProp><stringProp name="Header.value">application/json</stringProp></elementProp>
+            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert authenticated tester" enabled="true">
+              <collectionProp name="Asserion.test_strings">
+                <stringProp name="login-ok">&quot;ok&quot;:true</stringProp>
+                <stringProp name="login-user">&quot;username&quot;:&quot;tester&quot;</stringProp>
+                <stringProp name="login-role">&quot;role&quot;:&quot;tester&quot;</stringProp>
               </collectionProp>
-            </HeaderManager>
+              <stringProp name="Assertion.custom_message">Login response did not authenticate the tester account.</stringProp>
+              <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+              <boolProp name="Assertion.assume_success">false</boolProp>
+              <intProp name="Assertion.test_type">2</intProp>
+            </ResponseAssertion>
+            <hashTree/>
+            <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration threshold" enabled="true">
+              <stringProp name="DurationAssertion.duration">${__P(maxResponseMs,2000)}</stringProp>
+            </DurationAssertion>
             <hashTree/>
           </hashTree>
         </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/health" enabled="true">
+          <stringProp name="HTTPSampler.path">/api/health</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert current health payload" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="health-status">&quot;status&quot;:&quot;ok&quot;</stringProp>
+              <stringProp name="health-service">&quot;service&quot;:&quot;teacher-payroll-app&quot;</stringProp>
+              <stringProp name="health-version">&quot;version&quot;:&quot;3.0.0&quot;</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Health endpoint did not return the current service payload.</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">2</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration threshold" enabled="true">
+            <stringProp name="DurationAssertion.duration">${__P(maxResponseMs,2000)}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/payroll" enabled="true">
-          <stringProp name="HTTPSampler.domain">localhost</stringProp>
-          <stringProp name="HTTPSampler.port">3000</stringProp>
-          <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.path">/api/payroll</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
           <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{"hours":45,"subjectCoef":1,"classCoef":-0.1,"rate":143000,"degreeCoef":2}</stringProp>
+                <stringProp name="Argument.value">{&quot;hours&quot;:45,&quot;subjectCoef&quot;:1,&quot;classCoef&quot;:-0.1,&quot;rate&quot;:143000,&quot;degreeCoef&quot;:2}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
           </elementProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
-            <collectionProp name="HeaderManager.headers">
-              <elementProp name="Content-Type" elementType="Header">
-                <stringProp name="Header.name">Content-Type</stringProp>
-                <stringProp name="Header.value">application/json</stringProp>
-              </elementProp>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert canonical payroll result" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="converted-hours">&quot;convertedHours&quot;:40.5</stringProp>
+              <stringProp name="amount">&quot;amount&quot;:11583000</stringProp>
             </collectionProp>
-          </HeaderManager>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert amount" enabled="true">
-            <collectionProp name="Asserion.test_strings"><stringProp name="amount">amount</stringProp></collectionProp>
-            <stringProp name="Assertion.custom_message"></stringProp>
+            <stringProp name="Assertion.custom_message">Payroll response did not match the canonical negative class-coefficient case.</stringProp>
             <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">2</intProp>
           </ResponseAssertion>
+          <hashTree/>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration threshold" enabled="true">
+            <stringProp name="DurationAssertion.duration">${__P(maxResponseMs,2000)}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
         </hashTree>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/reports" enabled="true">
-          <stringProp name="HTTPSampler.domain">localhost</stringProp>
-          <stringProp name="HTTPSampler.port">3000</stringProp>
-          <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.path">/api/reports</stringProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
         </HTTPSamplerProxy>
-        <hashTree/>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert reports payload" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="count">&quot;count&quot;:</stringProp>
+              <stringProp name="total-amount">&quot;totalAmount&quot;:</stringProp>
+              <stringProp name="lines">&quot;lines&quot;:</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.custom_message">Reports response did not include the current aggregate payload.</stringProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">2</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration threshold" enabled="true">
+            <stringProp name="DurationAssertion.duration">${__P(maxResponseMs,2000)}</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
         <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp><name>saveConfig</name><value class="SampleSaveConfiguration"><time>true</time><latency>true</latency><timestamp>true</timestamp><success>true</success><label>true</label><code>true</code><message>true</message><threadName>true</threadName><dataType>true</dataType><encoding>false</encoding><assertions>true</assertions><subresults>true</subresults><responseData>false</responseData><samplerData>false</samplerData><xml>false</xml><fieldNames>true</fieldNames><responseHeaders>false</responseHeaders><requestHeaders>false</requestHeaders><responseDataOnError>false</responseDataOnError><saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage><assertionsResultsToSave>0</assertionsResultsToSave><bytes>true</bytes><sentBytes>true</sentBytes><url>true</url><threadCounts>true</threadCounts><idleTime>true</idleTime><connectTime>true</connectTime></value></objProp>
-          <stringProp name="filename">../../evidence/jmeter-results/payroll-summary.jtl</stringProp>
+          <stringProp name="filename"></stringProp>
         </ResultCollector>
         <hashTree/>
       </hashTree>

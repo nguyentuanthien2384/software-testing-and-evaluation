@@ -184,7 +184,7 @@ function compareByXCoordinate(coord1, coord2) {
  */
 
 var showControllersOnly = false;
-var seriesFilter = "^(POST /api/payroll|GET /api/reports|GET /api/health)(-success|-failure)?$";
+var seriesFilter = "^(POST /api/auth/login|POST /api/payroll|GET /api/reports|GET /api/health)(-success|-failure)?$";
 var filtersOnlySampleSeries = true;
 
 // Fixes time stamps

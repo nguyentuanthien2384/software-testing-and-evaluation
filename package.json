@@ -9,6 +9,7 @@
     "app:build": "npm run build --prefix source/teacher-payroll-app",
     "test:unit": "npm --prefix source/teacher-payroll-app test --",
     "test:jmeter-checker": "node --test tests/jmeter/check-thresholds.test.mjs",
+    "test:sqlite-evidence": "python evidence/db-sqlite/verify_sqlite.py --check-only",
     "coverage": "npm --prefix source/teacher-payroll-app run coverage --",
     "yc7:install": "npm install --prefix tests/selenium-js",
     "yc7:test": "npm run test:junit --prefix tests/selenium-js",

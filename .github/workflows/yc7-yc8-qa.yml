@@ -42,9 +42,13 @@ jobs:
         working-directory: source/teacher-payroll-app
         run: npm test -- --runInBand
 
+      - name: Verify checked-in SQLite evidence
+        run: npm run test:sqlite-evidence
+
       - name: Prepare SQLite database
         working-directory: source/teacher-payroll-app
         run: |
+          touch /tmp/teacher-payroll-ci.db
           npm run db:deploy
           npm run db:seed
 

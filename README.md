@@ -110,7 +110,10 @@ Kết quả:
 npm run qa:yc7-yc8
 ```
 
-Script này sẽ build app, start app, chờ `/api/health`, chạy Selenium WebDriver, sau đó chạy JMeter baseline.
+Script này tạo một SQLite tạm đã migrate/seed, build app, start app, chờ
+`/api/health`, chạy Selenium WebDriver, sau đó chạy JMeter baseline. Vì vậy dữ
+liệu phát sinh từ test không còn ghi vào `prisma/dev.db`. Chỉ đặt
+`QA_DATABASE_URL` khi chủ động muốn dùng một CSDL kiểm thử khác.
 
 ## CI/CD
 
