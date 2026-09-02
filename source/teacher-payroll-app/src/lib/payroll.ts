@@ -11,8 +11,8 @@ import {
 } from './types';
 
 export function assertPositiveNumber(value: number, fieldName: string): void {
-  if (!Number.isFinite(value) || value < 0) {
-    throw new Error(`${fieldName} phải là số không âm.`);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`${fieldName} phải là số lớn hơn 0.`);
   }
 }
 
@@ -25,9 +25,14 @@ export function calculateTeachingPay(input: PayrollInput): PayrollResult {
     throw new Error('Hệ số lớp phải là số.');
   }
 
-  const convertedHours = round(input.hours * (input.subjectCoef + input.classCoef), 2);
-  if (convertedHours < 0) {
-    throw new Error('Tiết quy đổi không được âm. Kiểm tra lại hệ số học phần và hệ số lớp.');
+  const totalCoefficient = input.subjectCoef + input.classCoef;
+  if (!Number.isFinite(totalCoefficient) || totalCoefficient <= 0) {
+    throw new Error('Tổng hệ số học phần và hệ số lớp phải lớn hơn 0.');
+  }
+
+  const convertedHours = round(input.hours * totalCoefficient, 2);
+  if (!Number.isFinite(convertedHours) || convertedHours <= 0) {
+    throw new Error('Tiết quy đổi phải là số lớn hơn 0.');
   }
   const amount = round(convertedHours * input.rate * input.degreeCoef, 0);
   return { convertedHours, amount };
@@ -70,6 +75,7 @@ export function findClassCoefficient(coefficients: ClassCoefficient[], year: str
 }
 
 export function getAge(dateOfBirth: string, now = new Date()): number {
+  if (typeof dateOfBirth !== 'string') return 0;
   const matched = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth);
   if (!matched) return 0;
 
@@ -92,9 +98,9 @@ export function getAge(dateOfBirth: string, now = new Date()): number {
 
 export function validateTeacher(teacher: Teacher, now = new Date()): string[] {
   const errors: string[] = [];
-  if (!teacher.fullName.trim()) errors.push('Họ tên giáo viên là bắt buộc.');
-  if (!/^0\d{9}$/.test(teacher.phone)) errors.push('Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacher.email)) errors.push('Email không hợp lệ.');
+  if (typeof teacher.fullName !== 'string' || !teacher.fullName.trim()) errors.push('Họ tên giáo viên là bắt buộc.');
+  if (typeof teacher.phone !== 'string' || !/^0\d{9}$/.test(teacher.phone)) errors.push('Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.');
+  if (typeof teacher.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacher.email)) errors.push('Email không hợp lệ.');
   const age = getAge(teacher.dateOfBirth, now);
   if (age < 22 || age > 70) errors.push('Tuổi giáo viên phải trong khoảng 22 đến 70.');
   if (!teacher.departmentId) errors.push('Phải chọn khoa.');

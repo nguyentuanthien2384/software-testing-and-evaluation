@@ -51,11 +51,29 @@ export class CrudPage extends BasePage {
   }
 
   async deleteRow(id) {
-    const button = await this.byTestId(`${this.entityKey}-delete-${id}`);
+    const buttonTestId = `${this.entityKey}-delete-${id}`;
+    const button = await this.byTestId(buttonTestId);
     await button.click();
     await this.driver.wait(until.alertIsPresent(), 5000);
     const confirmation = await this.driver.switchTo().alert();
     await confirmation.accept();
+    // Chờ đúng bản ghi biến mất thay vì chỉ chờ toast. Toast của lần xoá trước
+    // có thể vẫn còn và làm lần cleanup kế tiếp kết thúc quá sớm.
+    await this.driver.wait(async () => {
+      const matches = await this.driver.findElements(By.css(`[data-testid="${buttonTestId}"]`));
+      return matches.length === 0;
+    }, 10000, `Bản ghi ${id} không biến mất sau khi xác nhận xoá.`);
+  }
+
+  async rowExists(id) {
+    const rows = await this.driver.findElements(By.css(`[data-testid="${this.entityKey}-row-${id}"]`));
+    return rows.length > 0;
+  }
+
+  async deleteRowIfPresent(id) {
+    if (!(await this.rowExists(id))) return false;
+    await this.deleteRow(id);
+    return true;
   }
 
   async visibleRowsCount() {

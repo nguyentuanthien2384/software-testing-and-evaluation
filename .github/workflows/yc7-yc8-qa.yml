@@ -14,6 +14,8 @@ jobs:
       MAX_AVERAGE_MS: "1000"
       MAX_P95_MS: "2000"
       MAX_ERROR_RATE: "1"
+      MIN_THROUGHPUT: "10"
+      MAX_ARTIFACT_AGE_MINUTES: "60"
       DATABASE_URL: file:/tmp/teacher-payroll-ci.db
       AUTH_SESSION_SECRET: ci-teacher-payroll-session-secret
 
@@ -92,6 +94,8 @@ jobs:
           MAX_AVERAGE_MS: ${{ env.MAX_AVERAGE_MS }}
           MAX_P95_MS: ${{ env.MAX_P95_MS }}
           MAX_ERROR_RATE: ${{ env.MAX_ERROR_RATE }}
+          MIN_THROUGHPUT: ${{ env.MIN_THROUGHPUT }}
+          MAX_ARTIFACT_AGE_MINUTES: ${{ env.MAX_ARTIFACT_AGE_MINUTES }}
         run: bash tests/jmeter/run-yc8.sh
 
       - name: Upload QA artifacts

@@ -48,6 +48,73 @@ describe('validateAppData', () => {
     }
   });
 
+  test('từ chối dữ liệu khi phân công không có định mức của năm học', () => {
+    const data = copyData();
+    data.paymentRates = data.paymentRates.filter((item) => item.year !== '2024-2025');
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors).toContain('ASG-001: chưa thiết lập định mức tiền tiết cho năm học 2024-2025.');
+    }
+  });
+
+  test('từ chối dữ liệu khi sĩ số lớp được phân công không thuộc khoảng hệ số nào', () => {
+    const data = copyData();
+    const classIndex = data.classes.findIndex((item) => item.id === 'CLS-CTDL-02');
+    data.classes[classIndex] = { ...data.classes[classIndex], studentCount: 301 };
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors).toContain('ASG-004: chưa thiết lập hệ số lớp cho sĩ số 301 trong năm học 2024-2025.');
+    }
+  });
+
+  test('trả lỗi kiểm tra thay vì ném ngoại lệ khi bản ghi bằng cấp là null', () => {
+    const data = copyData();
+    (data.degrees as unknown[])[0] = null;
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContain('degrees[0] không phải là một bản ghi hợp lệ.');
+  });
+
+  test('trả lỗi kiểm tra khi bản ghi giáo viên chỉ có mã', () => {
+    const data = copyData();
+    data.teachers[0] = { id: 'GV-THIEU-TRUONG' } as unknown as typeof data.teachers[number];
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors).toEqual(expect.arrayContaining([
+        'GV-THIEU-TRUONG: Họ tên giáo viên là bắt buộc.',
+        'GV-THIEU-TRUONG: Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.',
+        'GV-THIEU-TRUONG: Email không hợp lệ.'
+      ]));
+    }
+  });
+
+  test('trả lỗi kiểm tra khi bản ghi kỳ học chỉ có mã', () => {
+    const data = copyData();
+    data.semesters[0] = { id: 'SEM-THIEU-TRUONG' } as unknown as typeof data.semesters[number];
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors).toEqual(expect.arrayContaining([
+        'Kỳ học SEM-THIEU-TRUONG thiếu tên.',
+        'Năm học của SEM-THIEU-TRUONG phải có dạng YYYY-YYYY và hai năm liên tiếp.',
+        'Ngày của kỳ học SEM-THIEU-TRUONG không hợp lệ.'
+      ]));
+    }
+  });
+
   test('không cho sửa khoá chính', () => {
     const row = { ...copyData().degrees[0], id: 'DEG-CHANGED' };
     expect(validateEntityMutation('degrees', row, copyData(), 'DEG-TS')).toContain('Không được thay đổi mã định danh khi chỉnh sửa.');

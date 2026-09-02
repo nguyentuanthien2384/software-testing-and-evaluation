@@ -6,6 +6,7 @@ import { generateNextTeacherCode } from '@/lib/payroll';
 import { getSemesterStatus, validateAppData, validateEntityMutation } from '@/lib/app-data-validation';
 import { buildTeachingClassBatch } from '@/lib/class-generation';
 import { copyDegreeCoefficients, nextAcademicYear } from '@/lib/coefficient-copy';
+import { parseNumericDraft } from '@/lib/numeric-input';
 import { useAppData } from '@/lib/use-app-data';
 import { useAuth } from '@/lib/use-auth';
 
@@ -19,6 +20,7 @@ type FieldConfig = {
   step?: string;
   min?: string;
   max?: string;
+  numberFormat?: Intl.NumberFormatOptions;
   options?: { value: string; label: string }[];
   optionsSource?: EntityKey;
   optionLabelFields?: string[];
@@ -299,7 +301,10 @@ function renderField(field: FieldConfig, form: Row, setForm: (row: Row) => void,
     disabled,
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const raw = event.target.value;
-      setForm({ ...form, [field.name]: field.type === 'number' ? Number(raw) : raw });
+      // Keep numeric fields as drafts while the user is typing. Converting on
+      // every keystroke turns the transient "-" into zero and silently changes
+      // negative values (for example -0.1) into positive ones.
+      setForm({ ...form, [field.name]: raw });
     }
   };
 
@@ -318,7 +323,19 @@ function renderField(field: FieldConfig, form: Row, setForm: (row: Row) => void,
     return <textarea {...common} rows={3} />;
   }
 
-  return <input {...common} type={field.type} step={field.step} min={field.min} max={field.max} />;
+  if (field.type === 'number') {
+    return (
+      <input
+        {...common}
+        type="text"
+        inputMode="decimal"
+        data-numeric-input="true"
+        aria-label={field.label}
+      />
+    );
+  }
+
+  return <input {...common} type={field.type} />;
 }
 
 function getOptions(field: FieldConfig, data: AppData): { value: string; label: string }[] {
@@ -340,7 +357,7 @@ function displayValue(field: FieldConfig, value: string | number, data: AppData,
     return option?.label ?? value;
   }
   if (field.type === 'number' && typeof value === 'number') {
-    return new Intl.NumberFormat('vi-VN').format(value);
+    return new Intl.NumberFormat('vi-VN', field.numberFormat).format(value);
   }
   return value ?? '';
 }
@@ -372,7 +389,7 @@ function normalizeRow(row: Row, fields: FieldConfig[]): Row {
   for (const field of fields) {
     const value = row[field.name];
     normalized[field.name] = field.type === 'number'
-      ? Number(value)
+      ? value === '' || value === undefined || value === null ? '' : parseNumericDraft(value)
       : typeof value === 'string' ? value.trim() : value;
   }
   return normalized;

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { calculateAllPayrollLinesSafely, calculateTeachingPay, formatCurrency } from '@/lib/payroll';
+import { parseNumericDraft } from '@/lib/numeric-input';
 import { useAppData } from '@/lib/use-app-data';
 
 export function PayrollCalculationPage() {
@@ -9,7 +10,7 @@ export function PayrollCalculationPage() {
   const { lines, errors: calculationErrors } = calculateAllPayrollLinesSafely(data);
   const [teacherId, setTeacherId] = useState('');
   const [year, setYear] = useState('');
-  const [manual, setManual] = useState({ hours: 45, subjectCoef: 1, classCoef: 0, rate: 143000, degreeCoef: 1.5 });
+  const [manual, setManual] = useState({ hours: '45', subjectCoef: '1', classCoef: '0', rate: '143000', degreeCoef: '1.5' });
 
   const filtered = useMemo(
     () => lines.filter((line) => (!teacherId || line.teacherId === teacherId) && (!year || line.year === year)),
@@ -17,7 +18,16 @@ export function PayrollCalculationPage() {
   );
   const { manualResult, manualError } = useMemo(() => {
     try {
-      return { manualResult: calculateTeachingPay(manual), manualError: '' };
+      return {
+        manualResult: calculateTeachingPay({
+          hours: parseNumericDraft(manual.hours),
+          subjectCoef: parseNumericDraft(manual.subjectCoef),
+          classCoef: parseNumericDraft(manual.classCoef),
+          rate: parseNumericDraft(manual.rate),
+          degreeCoef: parseNumericDraft(manual.degreeCoef)
+        }),
+        manualError: ''
+      };
     } catch (error) {
       return { manualResult: { convertedHours: 0, amount: 0 }, manualError: error instanceof Error ? error.message : 'Lỗi tính toán.' };
     }
@@ -81,11 +91,11 @@ export function PayrollCalculationPage() {
         <div className="panel">
           <h2>Tính thử thủ công</h2>
           <form className="form-grid" data-testid="payroll-manual-form">
-            <label>Số tiết<input id="hours" data-testid="payroll-hours-input" type="number" min="0" value={manual.hours} onChange={(event) => setManual({ ...manual, hours: Number(event.target.value) })} /></label>
-            <label>Hệ số học phần<input id="subjectCoef" data-testid="payroll-subject-coef-input" type="number" min="0" step="0.1" value={manual.subjectCoef} onChange={(event) => setManual({ ...manual, subjectCoef: Number(event.target.value) })} /></label>
-            <label>Hệ số lớp<input id="classCoef" data-testid="payroll-class-coef-input" type="number" step="0.1" value={manual.classCoef} onChange={(event) => setManual({ ...manual, classCoef: Number(event.target.value) })} /></label>
-            <label>Định mức<input id="rate" data-testid="payroll-rate-input" type="number" min="0" value={manual.rate} onChange={(event) => setManual({ ...manual, rate: Number(event.target.value) })} /></label>
-            <label>Hệ số bằng cấp<input id="degreeCoef" data-testid="payroll-degree-coef-input" type="number" min="0" step="0.1" value={manual.degreeCoef} onChange={(event) => setManual({ ...manual, degreeCoef: Number(event.target.value) })} /></label>
+            <label>Số tiết<input id="hours" data-testid="payroll-hours-input" type="text" inputMode="decimal" value={manual.hours} onChange={(event) => setManual({ ...manual, hours: event.target.value })} /></label>
+            <label>Hệ số học phần<input id="subjectCoef" data-testid="payroll-subject-coef-input" type="text" inputMode="decimal" value={manual.subjectCoef} onChange={(event) => setManual({ ...manual, subjectCoef: event.target.value })} /></label>
+            <label>Hệ số lớp<input id="classCoef" data-testid="payroll-class-coef-input" type="text" inputMode="decimal" value={manual.classCoef} onChange={(event) => setManual({ ...manual, classCoef: event.target.value })} /></label>
+            <label>Định mức<input id="rate" data-testid="payroll-rate-input" type="text" inputMode="decimal" value={manual.rate} onChange={(event) => setManual({ ...manual, rate: event.target.value })} /></label>
+            <label>Hệ số bằng cấp<input id="degreeCoef" data-testid="payroll-degree-coef-input" type="text" inputMode="decimal" value={manual.degreeCoef} onChange={(event) => setManual({ ...manual, degreeCoef: event.target.value })} /></label>
           </form>
           <div id="result" data-testid="payroll-result-box" className="result-box">
             {manualError && <p data-testid="payroll-error" style={{ color: '#e53e3e' }}>{manualError}</p>}

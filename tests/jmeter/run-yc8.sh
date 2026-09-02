@@ -31,4 +31,7 @@ node "$PROJECT_ROOT/tests/jmeter/check-thresholds.mjs" \
   --max-average "${MAX_AVERAGE_MS:-1000}" \
   --max-p95 "${MAX_P95_MS:-2000}" \
   --max-error-rate "${MAX_ERROR_RATE:-1}" \
-  --min-throughput "${MIN_THROUGHPUT:-0}"
+  --min-throughput "${MIN_THROUGHPUT:-10}" \
+  --expected-users "${JMETER_USERS:-50}" \
+  --expected-loops "${JMETER_LOOPS:-10}" \
+  --max-artifact-age-minutes "${MAX_ARTIFACT_AGE_MINUTES:-60}"

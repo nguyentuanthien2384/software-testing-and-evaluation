@@ -50,12 +50,30 @@ jmeter \
 - Average <= 1000 ms
 - P95 <= 2000 ms
 - Error rate <= 1%
-- Throughput >= 0 request/giây
+- Throughput toàn bài >= 10 request/giây
+- Mỗi API/login cũng phải đạt riêng các ngưỡng average, P95 và error rate ở trên
+- Kết quả phải có đủ bốn nhãn và đúng số mẫu của cấu hình users/loops
+- Mẫu cuối cùng không được cũ quá 60 phút
+
+Với cấu hình mặc định 50 users × 10 loops, gate yêu cầu đúng 1.550 mẫu:
+50 lần đăng nhập và 500 mẫu cho từng API health, payroll, reports. Thời lượng dùng để
+tính throughput chạy từ thời điểm bắt đầu mẫu đầu tiên đến thời điểm kết thúc mẫu cuối
+cùng (`timeStamp + elapsed`). Vì vậy file JTL cũ hoặc file bị dừng giữa chừng không thể
+được chấm đạt nhầm.
 
 Có thể override bằng biến môi trường:
 
 ```bash
-MAX_AVERAGE_MS=800 MAX_P95_MS=1500 MAX_ERROR_RATE=0.5 bash tests/jmeter/run-yc8.sh
+MAX_AVERAGE_MS=800 MAX_P95_MS=1500 MAX_ERROR_RATE=0.5 MIN_THROUGHPUT=20 bash tests/jmeter/run-yc8.sh
+```
+
+Có thể đổi thời hạn của artifact bằng `MAX_ARTIFACT_AGE_MINUTES`. Đặt giá trị này
+bằng `0` chỉ khi cần chấm lại một artifact lịch sử có chủ đích.
+
+Kiểm thử riêng bộ chấm ngưỡng (không khởi động app và không chạy tải):
+
+```bash
+npm run test:jmeter-checker
 ```
 
 ## Kết quả đầu ra

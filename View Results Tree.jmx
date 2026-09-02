@@ -41,7 +41,7 @@
         </HeaderManager>
         <hashTree/>
         <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV Data Set Config">
-          <stringProp name="filename">D:/software-testing-and-evaluation/tests/jmeter/data/payroll.csv</stringProp>
+          <stringProp name="filename">${__P(dataFile,tests/jmeter/data/payroll.csv)}</stringProp>
           <stringProp name="fileEncoding">UTF-8</stringProp>
           <stringProp name="variableNames">hours,subjectCoef,classCoef,rate,degreeCoef</stringProp>
           <boolProp name="ignoreFirstLine">true</boolProp>
@@ -102,8 +102,7 @@
         <hashTree>
           <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Response Assertion">
             <collectionProp name="Asserion.test_strings">
-              <stringProp name="109998">ok
-</stringProp>
+              <stringProp name="health-status">&quot;status&quot;:&quot;ok&quot;</stringProp>
             </collectionProp>
             <stringProp name="Assertion.custom_message"></stringProp>
             <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>

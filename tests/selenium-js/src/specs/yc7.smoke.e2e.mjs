@@ -47,15 +47,15 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     const degreeId = `DEG-${suffix}`;
     const shortName = `AUTO${suffix}`;
 
-    await degrees.openCrud();
-    await degrees.fillField('id', degreeId);
-    await degrees.fillField('name', `Bằng cấp Selenium ${suffix}`);
-    await degrees.fillField('shortName', shortName);
-    await degrees.fillField('coefficient', '2.5');
-    await degrees.submit();
-    await degrees.waitForText('Thêm dữ liệu thành công.');
-
     try {
+      await degrees.openCrud();
+      await degrees.fillField('id', degreeId);
+      await degrees.fillField('name', `Bằng cấp Selenium ${suffix}`);
+      await degrees.fillField('shortName', shortName);
+      await degrees.fillField('coefficient', '2.5');
+      await degrees.submit();
+      await degrees.waitForText('Thêm dữ liệu thành công.');
+
       await degrees.search(shortName);
       let tableText = await degrees.tableText();
       assert.match(tableText, new RegExp(shortName));
@@ -68,8 +68,11 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
       tableText = await degrees.tableText();
       assert.match(tableText, new RegExp(shortName));
     } finally {
-      await degrees.deleteRow(degreeId);
-      await degrees.waitForText('Đã xoá dữ liệu.');
+      // Bao cả pha tạo trong try: nếu thao tác lưu thành công nhưng bước chờ/assert
+      // thất bại, bản ghi Selenium vẫn được dọn.
+      await degrees.openCrud();
+      await degrees.search('');
+      await degrees.deleteRowIfPresent(degreeId);
     }
   });
 
@@ -91,6 +94,57 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     assert.match(text, /Nguyễn Văn An/);
   });
 
+  it('YC7-CLASS-COEF-001 hiển thị đúng mức điều chỉnh lớp ở cả hai năm học', async function () {
+    const coefficients = new CrudPage(driver, '/class-coefficients', 'classCoefficients', 'Thiết lập Hệ số lớp');
+    await coefficients.openCrud();
+
+    for (const year of ['2024', '2025']) {
+      const expected = [
+        [`CCOEF-${year}-01`, /0\s+40\s+-0,1/],
+        [`CCOEF-${year}-02`, /41\s+80\s+0,0/],
+        [`CCOEF-${year}-03`, /81\s+120\s+\+0,1/],
+        [`CCOEF-${year}-04`, /121\s+300\s+\+0,2/]
+      ];
+      for (const [id, pattern] of expected) {
+        const row = await coefficients.byTestId(`classCoefficients-row-${id}`);
+        assert.match(await row.getText(), pattern);
+      }
+    }
+  });
+
+  it('YC7-CLASS-COEF-INPUT-001 cho phép nhập mức điều chỉnh âm bằng bàn phím', async function () {
+    const coefficients = new CrudPage(driver, '/class-coefficients', 'classCoefficients', 'Thiết lập Hệ số lớp');
+    await coefficients.openCrud();
+    await (await coefficients.byTestId('classCoefficients-edit-CCOEF-2024-01')).click();
+    await coefficients.fillField('coefficient', '-0.2');
+    assert.equal(await (await coefficients.byTestId('field-coefficient')).getAttribute('value'), '-0.2');
+    // Không submit: ca này chỉ kiểm tra khả năng nhập số âm và không thay đổi dữ liệu nền.
+  });
+
+  it('YC7-CLASS-COEF-CRUD-001 lưu và hiển thị đúng mức điều chỉnh âm', async function () {
+    const coefficients = new CrudPage(driver, '/class-coefficients', 'classCoefficients', 'Thiết lập Hệ số lớp');
+    const id = `CCOEF-E2E-${Date.now()}`;
+
+    try {
+      await coefficients.openCrud();
+      await coefficients.fillField('id', id);
+      await coefficients.fillField('year', '2099-2100');
+      await coefficients.fillField('minStudents', '0');
+      await coefficients.fillField('maxStudents', '40');
+      await coefficients.fillField('coefficient', '-0.1');
+      await coefficients.submit();
+      await coefficients.waitForText('Thêm dữ liệu thành công.');
+
+      await coefficients.search(id);
+      const row = await coefficients.byTestId(`classCoefficients-row-${id}`);
+      assert.match(await row.getText(), /2099-2100\s+0\s+40\s+-0,1/);
+    } finally {
+      await coefficients.openCrud();
+      await coefficients.search('');
+      await coefficients.deleteRowIfPresent(id);
+    }
+  });
+
   it('YC7-CLASS-BATCH-001 tạo nguyên lô hai lớp với mã tăng tự động', async function () {
     const classes = new CrudPage(driver, '/classes', 'classes', 'Quản lý Lớp học phần');
     await classes.openCrud();
@@ -99,56 +153,56 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     const baseCode = `AUTO${suffix}.01`;
     const nextId = baseId.replace(/(\d+)$/, (value) => String(Number(value) + 1).padStart(value.length, '0'));
 
-    await classes.fillField('code', baseCode);
-    await classes.selectField('subjectId', 'SUB-CSDL');
-    await classes.selectField('semesterId', 'SEM-2025-1');
-    await classes.fillField('studentCount', '35');
-    const batchCount = await classes.byTestId('classes-batch-count');
-    await driver.executeScript(
-      `const element = arguments[0];
-       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-       setter.call(element, '2');
-       element.dispatchEvent(new Event('input', { bubbles: true }));`,
-      batchCount
-    );
-    await classes.submit();
-    await classes.waitForText('Đã thêm 2 lớp học phần thành công.');
-
     try {
+      await classes.fillField('code', baseCode);
+      await classes.selectField('subjectId', 'SUB-CSDL');
+      await classes.selectField('semesterId', 'SEM-2025-1');
+      await classes.fillField('studentCount', '35');
+      const batchCount = await classes.byTestId('classes-batch-count');
+      await driver.executeScript(
+        `const element = arguments[0];
+         const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+         setter.call(element, '2');
+         element.dispatchEvent(new Event('input', { bubbles: true }));`,
+        batchCount
+      );
+      await classes.submit();
+      await classes.waitForText('Đã thêm 2 lớp học phần thành công.');
+
       await classes.search(`AUTO${suffix}`);
       const text = await classes.tableText();
       assert.match(text, new RegExp(`AUTO${suffix}\\.01`));
       assert.match(text, new RegExp(`AUTO${suffix}\\.02`));
     } finally {
-      await classes.deleteRow(baseId);
-      await classes.waitForText('Đã xoá dữ liệu.');
+      await classes.openCrud();
       await classes.search('');
-      await classes.deleteRow(nextId);
-      await classes.waitForText('Đã xoá dữ liệu.');
+      await classes.deleteRowIfPresent(baseId);
+      await classes.deleteRowIfPresent(nextId);
     }
   });
 
   it('YC7-COEFFICIENT-COPY-001 sao chép trọn bộ hệ số sang năm kế tiếp', async function () {
     const coefficients = new CrudPage(driver, '/teacher-coefficients', 'degreeCoefficients', 'Thiết lập Hệ số giáo viên');
     await coefficients.openCrud();
-    const target = await coefficients.byTestId('degree-coefficients-copy-target');
-    await driver.executeScript(
-      `const element = arguments[0];
-       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-       setter.call(element, '2026-2027');
-       element.dispatchEvent(new Event('input', { bubbles: true }));`,
-      target
-    );
-    await (await coefficients.byTestId('degree-coefficients-copy-button')).click();
-    await coefficients.waitForText('Đã sao chép 4 hệ số sang năm 2026-2027.');
-
     try {
+      const target = await coefficients.byTestId('degree-coefficients-copy-target');
+      await driver.executeScript(
+        `const element = arguments[0];
+         const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+         setter.call(element, '2026-2027');
+         element.dispatchEvent(new Event('input', { bubbles: true }));`,
+        target
+      );
+      await (await coefficients.byTestId('degree-coefficients-copy-button')).click();
+      await coefficients.waitForText('Đã sao chép 4 hệ số sang năm 2026-2027.');
+
       await coefficients.search('2026-2027');
       assert.match(await coefficients.tableText(), /2026-2027/);
     } finally {
+      await coefficients.openCrud();
+      await coefficients.search('');
       for (let index = 1; index <= 4; index += 1) {
-        await coefficients.deleteRow(`DCOEF-2026-${String(index).padStart(3, '0')}`);
-        await coefficients.waitForText('Đã xoá dữ liệu.');
+        await coefficients.deleteRowIfPresent(`DCOEF-2026-${String(index).padStart(3, '0')}`);
       }
     }
   });
@@ -157,28 +211,44 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     const result = await driver.executeAsyncScript(`
       const done = arguments[arguments.length - 1];
       (async () => {
-        const first = await fetch('/api/state', { cache: 'no-store' });
-        const original = await first.json();
-        const firstVersion = first.headers.get('X-State-Version');
         const suffix = Date.now().toString().slice(-6);
-        const changed = { ...original, degrees: [...original.degrees, {
-          id: 'DEG-CONFLICT-' + suffix,
-          name: 'Kiểm tra xung đột',
-          shortName: 'CF' + suffix,
-          coefficient: 1.2,
-          createdAt: new Date().toISOString().slice(0, 10)
-        }] };
-        const saved = await fetch('/api/state', {
-          method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-State-Version': firstVersion }, body: JSON.stringify(changed)
-        });
-        const nextVersion = saved.headers.get('X-State-Version');
-        const stale = await fetch('/api/state', {
-          method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-State-Version': firstVersion }, body: JSON.stringify(original)
-        });
-        const restored = await fetch('/api/state', {
-          method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-State-Version': nextVersion }, body: JSON.stringify(original)
-        });
-        done({ saved: saved.status, stale: stale.status, restored: restored.status });
+        const artifactId = 'DEG-CONFLICT-' + suffix;
+        const outcome = {};
+        try {
+          const first = await fetch('/api/state', { cache: 'no-store' });
+          const original = await first.json();
+          const firstVersion = first.headers.get('X-State-Version');
+          const changed = { ...original, degrees: [...original.degrees, {
+            id: artifactId,
+            name: 'Kiểm tra xung đột',
+            shortName: 'CF' + suffix,
+            coefficient: 1.2,
+            createdAt: new Date().toISOString().slice(0, 10)
+          }] };
+          const saved = await fetch('/api/state', {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-State-Version': firstVersion }, body: JSON.stringify(changed)
+          });
+          outcome.saved = saved.status;
+          const stale = await fetch('/api/state', {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-State-Version': firstVersion }, body: JSON.stringify(original)
+          });
+          outcome.stale = stale.status;
+        } catch (error) {
+          outcome.error = String(error);
+        } finally {
+          // Chỉ loại bản ghi do chính test tạo và giữ nguyên mọi thay đổi khác.
+          // Dùng version mới nhất để cleanup vẫn tuân thủ khóa lạc quan của API.
+          const latest = await fetch('/api/state', { cache: 'no-store' });
+          const current = await latest.json();
+          const cleaned = { ...current, degrees: current.degrees.filter((item) => item.id !== artifactId) };
+          const restored = await fetch('/api/state', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-State-Version': latest.headers.get('X-State-Version') },
+            body: JSON.stringify(cleaned)
+          });
+          outcome.restored = restored.status;
+        }
+        done(outcome);
       })().catch((error) => done({ error: String(error) }));
     `);
     assert.deepEqual(result, { saved: 200, stale: 409, restored: 200 });

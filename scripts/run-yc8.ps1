@@ -23,7 +23,8 @@ param(
   [int]$MaxAverageMs = 1000,
   [int]$MaxP95Ms = 2000,
   [double]$MaxErrorRate = 1,
-  [double]$MinThroughput = 0
+  [double]$MinThroughput = 10,
+  [double]$MaxArtifactAgeMinutes = 60
 )
 
 $ErrorActionPreference = "Stop"
@@ -85,7 +86,10 @@ node (Join-Path $jmeterDir "check-thresholds.mjs") `
   --max-average $MaxAverageMs `
   --max-p95 $MaxP95Ms `
   --max-error-rate $MaxErrorRate `
-  --min-throughput $MinThroughput
+  --min-throughput $MinThroughput `
+  --expected-users $Users `
+  --expected-loops $Loops `
+  --max-artifact-age-minutes $MaxArtifactAgeMinutes
 $exit = $LASTEXITCODE
 
 Write-Host ""

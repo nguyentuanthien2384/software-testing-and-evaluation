@@ -1,5 +1,6 @@
 import { PUT as updateState } from '../../app/api/state/route';
 import { POST as login } from '../../app/api/auth/login/route';
+import { initialData } from '../initial-data';
 import { createSessionToken, SESSION_COOKIE } from '../session';
 
 function cookie(user: { username: string; displayName: string; role: 'admin' | 'tester' }) {
@@ -38,6 +39,25 @@ describe('bảo vệ API', () => {
       body: JSON.stringify({})
     }));
     expect(response.status).toBe(400);
+  });
+
+  test('payload có bản ghi null trả 400 thay vì lỗi máy chủ', async () => {
+    const data = structuredClone(initialData);
+    (data.degrees as unknown[])[0] = null;
+    const response = await updateState(new Request('http://localhost/api/state', {
+      method: 'PUT',
+      headers: {
+        cookie: cookie({ username: 'admin', displayName: 'Quản trị viên', role: 'admin' }),
+        'Content-Type': 'application/json',
+        'X-State-Version': 'version'
+      },
+      body: JSON.stringify(data)
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: 'degrees[0] không phải là một bản ghi hợp lệ.'
+    });
   });
 
   test('đăng nhập đúng trả cookie HttpOnly, sai không trả phiên', async () => {

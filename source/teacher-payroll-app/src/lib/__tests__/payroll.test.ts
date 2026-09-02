@@ -26,12 +26,25 @@ describe('calculateTeachingPay', () => {
     expect(calculateTeachingPay({ hours: 60, subjectCoef: 1.2, classCoef: 0.1, rate: 143000, degreeCoef: 1.5 }).amount).toBe(16731000);
   });
 
-  test('không cho số tiết âm', () => {
-    expect(() => calculateTeachingPay({ hours: -1, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 1 })).toThrow('Số tiết');
+  test.each([
+    ['số tiết bằng 0', { hours: 0, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
+    ['số tiết âm', { hours: -1, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
+    ['hệ số học phần bằng 0', { hours: 45, subjectCoef: 0, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Hệ số học phần'],
+    ['hệ số học phần âm', { hours: 45, subjectCoef: -0.1, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Hệ số học phần'],
+    ['định mức bằng 0', { hours: 45, subjectCoef: 1, classCoef: 0, rate: 0, degreeCoef: 1 }, 'Định mức'],
+    ['định mức âm', { hours: 45, subjectCoef: 1, classCoef: 0, rate: -1, degreeCoef: 1 }, 'Định mức'],
+    ['hệ số bằng cấp bằng 0', { hours: 45, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 0 }, 'Hệ số bằng cấp'],
+    ['hệ số bằng cấp âm', { hours: 45, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: -0.1 }, 'Hệ số bằng cấp']
+  ])('không cho %s', (_case, input, expectedError) => {
+    expect(() => calculateTeachingPay(input)).toThrow(expectedError);
   });
 
-  test('không cho tiết quy đổi âm', () => {
-    expect(() => calculateTeachingPay({ hours: 45, subjectCoef: 0.1, classCoef: -0.5, rate: 100000, degreeCoef: 1 })).toThrow('Tiết quy đổi');
+  test.each([
+    ['bằng 0', -0.1],
+    ['âm', -0.5]
+  ])('không cho tổng hệ số học phần và hệ số lớp %s', (_case, classCoef) => {
+    expect(() => calculateTeachingPay({ hours: 45, subjectCoef: 0.1, classCoef, rate: 100000, degreeCoef: 1 }))
+      .toThrow('Tổng hệ số học phần và hệ số lớp phải lớn hơn 0');
   });
 
   test('làm tròn chính xác tại ranh giới số thập phân', () => {
@@ -55,8 +68,14 @@ describe('lookup cấu hình', () => {
     expect(findDegreeCoefficient(initialData, 'DEG-TS', '2024-2025')).toBe(2);
   });
 
-  test('lấy hệ số lớp theo sĩ số', () => {
-    expect(findClassCoefficient(initialData.classCoefficients, '2024-2025', 82)).toBe(0.1);
+  test.each([
+    [0, -0.1], [40, -0.1],
+    [41, 0], [80, 0],
+    [81, 0.1], [120, 0.1],
+    [121, 0.2], [300, 0.2]
+  ])('lấy đúng hệ số lớp tại sĩ số %i', (studentCount, expected) => {
+    expect(findClassCoefficient(initialData.classCoefficients, '2024-2025', studentCount)).toBe(expected);
+    expect(findClassCoefficient(initialData.classCoefficients, '2025-2026', studentCount)).toBe(expected);
   });
 });
 

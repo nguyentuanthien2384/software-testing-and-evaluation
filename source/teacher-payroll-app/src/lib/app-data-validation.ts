@@ -41,14 +41,16 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function isValidIsoDate(value: string): boolean {
+function isValidIsoDate(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;
   const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
   return date.getFullYear() === Number(match[1]) && date.getMonth() === Number(match[2]) - 1 && date.getDate() === Number(match[3]);
 }
 
-export function isValidAcademicYear(value: string): boolean {
+export function isValidAcademicYear(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
   const match = /^(\d{4})-(\d{4})$/.exec(value.trim());
   return Boolean(match && Number(match[2]) === Number(match[1]) + 1);
 }
@@ -79,6 +81,7 @@ export function validateAppData(input: unknown): ValidationResult {
 
   const data = input as AppData;
   const errors: string[] = [];
+  let hasInvalidRecord = false;
 
   for (const key of ENTITY_KEYS) {
     const rows = data[key] as unknown as unknown[];
@@ -86,6 +89,7 @@ export function validateAppData(input: unknown): ValidationResult {
       const record = asRecord(row);
       if (!record) {
         errors.push(`${key}[${index}] không phải là một bản ghi hợp lệ.`);
+        hasInvalidRecord = true;
         return;
       }
       if (!isNonEmptyString(record.id)) errors.push(`${key}[${index}] thiếu mã định danh.`);
@@ -95,9 +99,14 @@ export function validateAppData(input: unknown): ValidationResult {
         }
       }
     });
-    for (const duplicate of duplicateValues(rows as { id: string }[], (row) => row.id)) {
+    const records = rows.filter((row): row is Record<string, unknown> => asRecord(row) !== null);
+    for (const duplicate of duplicateValues(records, (row) => typeof row.id === 'string' ? row.id : '')) {
       errors.push(`Mã ${duplicate} bị trùng trong ${key}.`);
     }
+  }
+
+  if (hasInvalidRecord) {
+    return { ok: false, errors: Array.from(new Set(errors)) };
   }
 
   for (const item of data.degrees) {
@@ -200,6 +209,15 @@ export function validateAppData(input: unknown): ValidationResult {
     const classCoefficient = teachingClass && semester
       ? data.classCoefficients.find((item) => item.year === semester.year && teachingClass.studentCount >= item.minStudents && teachingClass.studentCount <= item.maxStudents)
       : undefined;
+    const paymentRate = semester
+      ? data.paymentRates.find((item) => item.year === semester.year)
+      : undefined;
+    if (semester && !paymentRate) {
+      errors.push(`${assignment.id}: chưa thiết lập định mức tiền tiết cho năm học ${semester.year}.`);
+    }
+    if (teachingClass && semester && !classCoefficient) {
+      errors.push(`${assignment.id}: chưa thiết lập hệ số lớp cho sĩ số ${teachingClass.studentCount} trong năm học ${semester.year}.`);
+    }
     if (subject && classCoefficient && subject.coefficient + classCoefficient.coefficient <= 0) {
       errors.push(`${assignment.id}: tổng hệ số học phần và hệ số lớp phải lớn hơn 0.`);
     }
