@@ -2,6 +2,9 @@
 
 Bản hoàn chỉnh theo báo cáo/đặc tả Nhóm 11. Source này triển khai các màn hình CRUD và luồng nghiệp vụ chính đã mô tả trong tài liệu: quản lý bằng cấp, khoa, giáo viên, học phần, kỳ học, lớp học phần, phân công giảng viên, thiết lập định mức/hệ số, tính tiền dạy và báo cáo.
 
+> 📖 **Xem tài liệu đầy đủ kèm thư viện ảnh giao diện UI/UX và hướng dẫn kiểm thử tại:** [README.md gốc của dự án](../../README.md)
+
+
 ## Công nghệ
 
 - Next.js App Router
