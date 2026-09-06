@@ -166,8 +166,8 @@ Chạy bộ test hiện có nhưng hiện trình duyệt thật (không headless
 
 ---
 
-## 6. Kết quả tham chiếu (chạy ngày 02/09/2026)
+## 6. Kết quả tham chiếu (chạy ngày 06/09/2026)
 
 - YC7 Selenium JS: **21/21 PASS**; Selenium Python legacy: **5/5 PASS**.
-- YC8 (50 users, 10 loops = 1.550 samples): average **8,96 ms**, P95 **35 ms**,
-  error **0%**, throughput **78,10 request/giây** → **gate PASSED**.
+- YC8 (50 users, 10 loops = 1.550 samples): average **7,67 ms**, P95 **26 ms**,
+  error **0%**, throughput **78,68 request/giây** → **gate PASSED**.
