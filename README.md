@@ -1,6 +1,6 @@
 # 🎓 Hệ Thống Quản Lý & Tính Tiền Dạy Giáo Viên
 ### 📌 Đồ án Môn học: Đảm bảo Chất lượng & Kiểm thử Phần mềm (Software Testing & Evaluation)
-**Mã lớp học phần / Nhóm thực hiện:** N01 - Nhóm 07 (Nhóm 11)  
+**Mã lớp học phần / Nhóm thực hiện:** N01 - Nhóm 07  
 **Phiên bản:** v4.0.0 (Tích hợp CSDL SQLite Prisma, UI/UX Hiện đại, Bộ kiểm thử tự động Selenium WebDriver & Apache JMeter)
 
 ---
