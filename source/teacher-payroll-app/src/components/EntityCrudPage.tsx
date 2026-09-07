@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, KeyboardEvent, MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { AppData, EntityKey } from '@/lib/types';
 import { generateNextTeacherCode } from '@/lib/payroll';
 import { getSemesterStatus, validateAppData, validateEntityMutation } from '@/lib/app-data-validation';
@@ -51,6 +51,8 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   const [form, setForm] = useState<Row>(() => buildEmptyRow(fields, entityKey, rows, idPrefix));
   const [message, setMessage] = useState<string>('');
   const [batchCount, setBatchCount] = useState('1');
+  const rejectedNumericFields = useRef(new Set<string>());
+  const rejectedBatchInput = useRef(false);
   const [copySourceYear, setCopySourceYear] = useState('');
   const [copyTargetYear, setCopyTargetYear] = useState('');
 
@@ -80,12 +82,15 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   }, [allowCopyPreviousYear, loaded, copySourceYear, coefficientYears]);
 
   function startCreate(options?: { keepMessage?: boolean }) {
+    rejectedNumericFields.current.clear();
+    rejectedBatchInput.current = false;
     setEditingId(null);
     setForm(buildEmptyRow(fields, entityKey, rows, idPrefix));
     if (!options?.keepMessage) setMessage('');
   }
 
   function startEdit(row: Row) {
+    rejectedNumericFields.current.clear();
     setEditingId(row.id);
     setForm({ ...row });
     setMessage('');
@@ -218,7 +223,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
               {visibleFields.map((field) => (
                 <label className={field.type === 'textarea' ? 'full' : ''} key={field.name}>
                   {field.label}
-                  {renderField(field, form, setForm, data, saving || !loaded || Boolean(loadError) || (Boolean(editingId) && field.name === 'id'))}
+                  {renderField(field, form, setForm, data, saving || !loaded || Boolean(loadError) || (Boolean(editingId) && field.name === 'id'), rejectedNumericFields)}
                 </label>
               ))}
               {allowBulkCreate && !editingId && (
@@ -238,8 +243,21 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
                     value={batchCount}
                     disabled={saving || !loaded || Boolean(loadError)}
                     onChange={(event) => {
-                      if (/^\d*$/.test(event.target.value)) setBatchCount(event.target.value);
+                      const raw = event.target.value;
+                      if (raw.includes('-')) {
+                        rejectedBatchInput.current = true;
+                        setBatchCount('');
+                        return;
+                      }
+                      if (rejectedBatchInput.current) {
+                        if (raw === '') rejectedBatchInput.current = false;
+                        else setBatchCount('');
+                        return;
+                      }
+                      if (/^\d*$/.test(raw)) setBatchCount(raw);
                     }}
+                    onKeyDown={(event) => handleRejectedNumberKey(event, rejectedBatchInput, () => setBatchCount(''))}
+                    onBlur={() => { rejectedBatchInput.current = false; }}
                   />
                 </label>
               )}
@@ -307,7 +325,14 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   );
 }
 
-function renderField(field: FieldConfig, form: Row, setForm: (row: Row) => void, data: AppData, disabled: boolean) {
+function renderField(
+  field: FieldConfig,
+  form: Row,
+  setForm: (row: Row) => void,
+  data: AppData,
+  disabled: boolean,
+  rejectedNumericFields: MutableRefObject<Set<string>>
+) {
   const value = form[field.name] ?? '';
   const common = {
     name: field.name,
@@ -318,7 +343,19 @@ function renderField(field: FieldConfig, form: Row, setForm: (row: Row) => void,
     disabled,
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const raw = event.target.value;
-      if (field.type === 'number' && !isNonNegativeNumericDraft(raw)) return;
+      if (field.type === 'number') {
+        if (raw.includes('-')) {
+          rejectedNumericFields.current.add(field.name);
+          setForm({ ...form, [field.name]: '' });
+          return;
+        }
+        if (rejectedNumericFields.current.has(field.name)) {
+          if (raw === '') rejectedNumericFields.current.delete(field.name);
+          else setForm({ ...form, [field.name]: '' });
+          return;
+        }
+        if (!isNonNegativeNumericDraft(raw)) return;
+      }
       setForm({ ...form, [field.name]: raw });
     }
   };
@@ -351,6 +388,16 @@ function renderField(field: FieldConfig, form: Row, setForm: (row: Row) => void,
         max={field.max}
         step={field.step ?? 'any'}
         pattern="[0-9]*([.,][0-9]*)?"
+        onKeyDown={(event) => handleRejectedNumberKey(
+          event,
+          { current: rejectedNumericFields.current.has(field.name) },
+          () => {
+            rejectedNumericFields.current.add(field.name);
+            setForm({ ...form, [field.name]: '' });
+          },
+          () => rejectedNumericFields.current.delete(field.name)
+        )}
+        onBlur={() => rejectedNumericFields.current.delete(field.name)}
       />
     );
   }
@@ -444,9 +491,43 @@ function validateRow(row: Row, fields: FieldConfig[]): string[] {
     const maximum = field.max === undefined ? undefined : Number(field.max);
     if (maximum !== undefined && Number.isFinite(maximum) && value > maximum) {
       errors.push(`${field.label} phải nhỏ hơn hoặc bằng ${field.max}.`);
+      continue;
+    }
+
+    const step = field.step === undefined || field.step === 'any' ? undefined : Number(field.step);
+    if (step !== undefined && Number.isFinite(step) && step > 0) {
+      const base = minimum !== undefined && Number.isFinite(minimum) ? minimum : 0;
+      const stepCount = (value - base) / step;
+      if (Math.abs(stepCount - Math.round(stepCount)) > 1e-9) {
+        errors.push(`${field.label} phải theo bước ${field.step}.`);
+      }
     }
   }
   return errors;
+}
+
+function handleRejectedNumberKey(
+  event: KeyboardEvent<HTMLInputElement>,
+  rejected: MutableRefObject<boolean>,
+  reject: () => void,
+  reset: () => void = () => { rejected.current = false; }
+) {
+  if (event.key === '-' || event.key === '+') {
+    event.preventDefault();
+    if (event.key === '-') {
+      rejected.current = true;
+      reject();
+    }
+    return;
+  }
+  if (!rejected.current) return;
+  if (event.key === 'Backspace' || event.key === 'Delete') {
+    reset();
+    return;
+  }
+  if (!['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'Escape'].includes(event.key)) {
+    event.preventDefault();
+  }
 }
 
 function canDelete(entityKey: EntityKey, id: string, data: AppData): { ok: boolean; message: string } {

@@ -28,6 +28,9 @@ export function calculateTeachingPay(input: PayrollInput): PayrollResult {
     throw new Error('Tiết quy đổi phải là số lớn hơn 0.');
   }
   const amount = round(convertedHours * input.rate * input.degreeCoef, 0);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error('Thành tiền phải là số lớn hơn 0.');
+  }
   return { convertedHours, amount };
 }
 

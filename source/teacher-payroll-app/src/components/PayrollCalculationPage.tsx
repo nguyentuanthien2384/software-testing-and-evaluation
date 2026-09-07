@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { KeyboardEvent, useMemo, useRef, useState } from 'react';
 import { calculateAllPayrollLinesSafely, calculateTeachingPay, formatCurrency } from '@/lib/payroll';
 import { isNonNegativeNumericDraft, parseNumericDraft } from '@/lib/numeric-input';
 import { useAppData } from '@/lib/use-app-data';
@@ -11,6 +11,7 @@ export function PayrollCalculationPage() {
   const [teacherId, setTeacherId] = useState('');
   const [year, setYear] = useState('');
   const [manual, setManual] = useState({ hours: '', subjectCoef: '', classCoef: '', rate: '', degreeCoef: '' });
+  const rejectedManualFields = useRef(new Set<keyof typeof manual>());
 
   const filtered = useMemo(
     () => lines.filter((line) => (!teacherId || line.teacherId === teacherId) && (!year || line.year === year)),
@@ -50,7 +51,36 @@ export function PayrollCalculationPage() {
   }, [manual]);
 
   function updateManualValue(field: keyof typeof manual, value: string) {
+    if (value.includes('-')) {
+      rejectedManualFields.current.add(field);
+      setManual((current) => ({ ...current, [field]: '' }));
+      return;
+    }
+    if (rejectedManualFields.current.has(field)) {
+      if (value === '') rejectedManualFields.current.delete(field);
+      else setManual((current) => ({ ...current, [field]: '' }));
+      return;
+    }
     if (isNonNegativeNumericDraft(value)) setManual((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleManualKeyDown(field: keyof typeof manual, event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === '-' || event.key === '+') {
+      event.preventDefault();
+      if (event.key === '-') {
+        rejectedManualFields.current.add(field);
+        setManual((current) => ({ ...current, [field]: '' }));
+      }
+      return;
+    }
+    if (!rejectedManualFields.current.has(field)) return;
+    if (event.key === 'Backspace' || event.key === 'Delete') {
+      rejectedManualFields.current.delete(field);
+      return;
+    }
+    if (!['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'Escape'].includes(event.key)) {
+      event.preventDefault();
+    }
   }
   const total = filtered.reduce((sum, line) => sum + line.amount, 0);
   const years = Array.from(new Set(data.semesters.map((semester) => semester.year)));
@@ -111,11 +141,11 @@ export function PayrollCalculationPage() {
         <div className="panel">
           <h2>Tính thử thủ công</h2>
           <form className="form-grid" data-testid="payroll-manual-form">
-            <label>Số tiết<input id="hours" aria-label="Số tiết" aria-required="true" data-testid="payroll-hours-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.hours} onChange={(event) => updateManualValue('hours', event.target.value)} /></label>
-            <label>Hệ số học phần<input id="subjectCoef" aria-label="Hệ số học phần" aria-required="true" data-testid="payroll-subject-coef-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.subjectCoef} onChange={(event) => updateManualValue('subjectCoef', event.target.value)} /></label>
-            <label>Hệ số lớp<input id="classCoef" aria-label="Hệ số lớp" aria-required="true" data-testid="payroll-class-coef-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.classCoef} onChange={(event) => updateManualValue('classCoef', event.target.value)} /></label>
-            <label>Định mức<input id="rate" aria-label="Định mức" aria-required="true" data-testid="payroll-rate-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.rate} onChange={(event) => updateManualValue('rate', event.target.value)} /></label>
-            <label>Hệ số bằng cấp<input id="degreeCoef" aria-label="Hệ số bằng cấp" aria-required="true" data-testid="payroll-degree-coef-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.degreeCoef} onChange={(event) => updateManualValue('degreeCoef', event.target.value)} /></label>
+            <label>Số tiết<input id="hours" aria-label="Số tiết" aria-required="true" data-testid="payroll-hours-input" data-min-exclusive="0" type="text" inputMode="decimal" pattern="[0-9]*([.,][0-9]*)?" required value={manual.hours} onChange={(event) => updateManualValue('hours', event.target.value)} onKeyDown={(event) => handleManualKeyDown('hours', event)} onBlur={() => rejectedManualFields.current.delete('hours')} /></label>
+            <label>Hệ số học phần<input id="subjectCoef" aria-label="Hệ số học phần" aria-required="true" data-testid="payroll-subject-coef-input" data-min-exclusive="0" type="text" inputMode="decimal" pattern="[0-9]*([.,][0-9]*)?" required value={manual.subjectCoef} onChange={(event) => updateManualValue('subjectCoef', event.target.value)} onKeyDown={(event) => handleManualKeyDown('subjectCoef', event)} onBlur={() => rejectedManualFields.current.delete('subjectCoef')} /></label>
+            <label>Hệ số lớp<input id="classCoef" aria-label="Hệ số lớp" aria-required="true" data-testid="payroll-class-coef-input" data-min-exclusive="0" type="text" inputMode="decimal" pattern="[0-9]*([.,][0-9]*)?" required value={manual.classCoef} onChange={(event) => updateManualValue('classCoef', event.target.value)} onKeyDown={(event) => handleManualKeyDown('classCoef', event)} onBlur={() => rejectedManualFields.current.delete('classCoef')} /></label>
+            <label>Định mức<input id="rate" aria-label="Định mức" aria-required="true" data-testid="payroll-rate-input" data-min-exclusive="0" type="text" inputMode="decimal" pattern="[0-9]*([.,][0-9]*)?" required value={manual.rate} onChange={(event) => updateManualValue('rate', event.target.value)} onKeyDown={(event) => handleManualKeyDown('rate', event)} onBlur={() => rejectedManualFields.current.delete('rate')} /></label>
+            <label>Hệ số bằng cấp<input id="degreeCoef" aria-label="Hệ số bằng cấp" aria-required="true" data-testid="payroll-degree-coef-input" data-min-exclusive="0" type="text" inputMode="decimal" pattern="[0-9]*([.,][0-9]*)?" required value={manual.degreeCoef} onChange={(event) => updateManualValue('degreeCoef', event.target.value)} onKeyDown={(event) => handleManualKeyDown('degreeCoef', event)} onBlur={() => rejectedManualFields.current.delete('degreeCoef')} /></label>
           </form>
           <div id="result" data-testid="payroll-result-box" className="result-box">
             {manualError && <p data-testid="payroll-error" role="alert" style={{ color: '#e53e3e' }}>{manualError}</p>}

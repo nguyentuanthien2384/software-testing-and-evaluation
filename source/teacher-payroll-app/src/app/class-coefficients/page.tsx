@@ -5,8 +5,8 @@ import { EntityCrudPage } from '@/components/EntityCrudPage';
 const fields = [
   { name: 'id', label: 'Mã', type: 'text', required: true },
   { name: 'year', label: 'Năm học', type: 'text', required: true },
-  { name: 'minStudents', label: 'Sĩ số từ', type: 'number', required: true, min: '1' },
-  { name: 'maxStudents', label: 'Sĩ số đến', type: 'number', required: true, min: '1' },
+  { name: 'minStudents', label: 'Sĩ số từ', type: 'number', required: true, min: '1', step: '1' },
+  { name: 'maxStudents', label: 'Sĩ số đến', type: 'number', required: true, min: '1', step: '1' },
   {
     name: 'coefficient',
     label: 'Hệ số lớp',

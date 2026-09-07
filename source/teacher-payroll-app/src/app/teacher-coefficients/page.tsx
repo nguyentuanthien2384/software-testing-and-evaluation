@@ -6,7 +6,7 @@ const fields = [
   { name: 'id', label: 'Mã', type: 'text', required: true },
   { name: 'year', label: 'Năm học', type: 'text', required: true },
   { name: 'degreeId', label: 'Bằng cấp', type: 'select', required: true, optionsSource: 'degrees', optionLabelFields: ['shortName', 'name'] },
-  { name: 'coefficient', label: 'Hệ số', type: 'number', required: true, min: '0.1', step: '0.1' }
+  { name: 'coefficient', label: 'Hệ số', type: 'number', required: true, min: '0.01', step: '0.01' }
 ];
 
 export default function Page() {

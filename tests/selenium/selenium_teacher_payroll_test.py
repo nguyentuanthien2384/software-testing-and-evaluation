@@ -114,11 +114,19 @@ def test_teacher_page(driver):
 def test_payroll_calculation(driver):
     driver.get(f"{BASE_URL}/payroll")
     wait_text(driver, "Tính tiền dạy")
-    hours = driver.find_element(By.ID, "hours")
-    hours.clear()
-    hours.send_keys("45")
-    driver.find_element(By.ID, "amount")
-    wait_text(driver, "Thành tiền")
+    positive_inputs = {
+        "hours": "45",
+        "subjectCoef": "1",
+        "classCoef": "0.9",
+        "rate": "143000",
+        "degreeCoef": "2",
+    }
+    for field_id, value in positive_inputs.items():
+        field = driver.find_element(By.ID, field_id)
+        field.clear()
+        field.send_keys(value)
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "amount")))
+    wait_text(driver, "11.583.000")
 
 
 def test_reports(driver):

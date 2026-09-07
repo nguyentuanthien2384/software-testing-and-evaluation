@@ -16,6 +16,15 @@ Thư mục này triển khai YC8 bằng Apache JMeter cho các API chính của 
 - `POST /api/payroll`
 - `GET /api/reports`
 
+Các payload tiền dạy chỉ dùng chỉ số lớn hơn `0` và bộ hệ số lớp dương
+`0,9 / 1,0 / 1,1 / 1,2`. Assertion đối chiếu cả số tiết quy đổi và thành tiền
+theo công thức:
+
+```text
+số tiết quy đổi = số tiết × hệ số học phần × hệ số lớp
+thành tiền = số tiết quy đổi × định mức tiết × hệ số bằng cấp
+```
+
 ## Chạy local
 
 Điều kiện: app đang chạy tại `http://127.0.0.1:3000` và máy đã cài JMeter.

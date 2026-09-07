@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-SQLite-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
 [![Jest](https://img.shields.io/badge/Jest-Unit%20Test%20100%25-C21325?style=flat-square&logo=jest)](https://jestjs.io/)
-[![Selenium](https://img.shields.io/badge/Selenium%20WebDriver-YC7%20PASS%20(21%2F21)-43B02A?style=flat-square&logo=selenium)](https://www.selenium.dev/)
+[![Selenium](https://img.shields.io/badge/Selenium%20WebDriver-YC7%20PASS%20(22%2F22)-43B02A?style=flat-square&logo=selenium)](https://www.selenium.dev/)
 [![Apache JMeter](https://img.shields.io/badge/JMeter-YC8%20Gate%20PASSED-D22128?style=flat-square&logo=apachejmeter)](https://jmeter.apache.org/)
 [![CI/CD](https://img.shields.io/badge/GitHub%20Actions-CI%20Ready-2088FF?style=flat-square&logo=github-actions)](https://github.com/)
 
@@ -44,7 +44,7 @@
 Dự án **Phần mềm Tính tiền dạy cho Giáo viên** là một hệ thống phần mềm quản lý đào tạo và thù lao giảng dạy chuyên sâu dành cho các trường đại học/cao đẳng, được xây dựng theo chuẩn chất lượng phần mềm (Software Quality Assurance). Hệ thống giải quyết trọn vẹn bài toán:
 - Quản lý hồ sơ giáo viên, bằng cấp, khoa viện, học phần, kỳ học và lớp học phần.
 - Phân công giảng dạy linh hoạt giữa giảng viên cơ hữu và giảng viên thỉnh giảng.
-- Thiết lập bảng định mức tiết, bảng hệ số bằng cấp, bảng hệ số lớp đông sinh viên theo từng năm học.
+- Thiết lập bảng định mức tiết, bảng hệ số bằng cấp và hệ số nhân theo sĩ số lớp cho từng năm học.
 - Tự động hóa quá trình tính toán tiền thù lao giảng dạy một cách chính xác, minh bạch, bảo vệ dữ liệu trước các trường hợp thiếu cấu hình.
 - Cung cấp các báo cáo tổng hợp và chi tiết, hỗ trợ trích xuất dữ liệu ra file CSV hoặc in ấn/lưu trữ định dạng PDF theo chuẩn khổ giấy A4.
 
@@ -141,7 +141,7 @@ Trang phân tích trực quan tổng số tiết giảng dạy, số lớp đả
 ---
 
 #### 9. Thiết lập Bảng Định mức Tiết & Hệ số Phức hợp
-Hỗ trợ cấu hình định mức thù lao cơ bản cho từng năm học và kỳ học; thiết lập hệ số quy đổi theo quy mô sĩ số lớp học và hệ số đãi ngộ theo bằng cấp chuyên môn (hỗ trợ sao chép nhanh dữ liệu từ năm trước).
+Hỗ trợ cấu hình định mức thù lao cơ bản cho từng năm học và kỳ học; thiết lập hệ số nhân theo quy mô sĩ số lớp học và hệ số đãi ngộ theo bằng cấp chuyên môn (hỗ trợ sao chép nhanh dữ liệu từ năm trước). Mọi chỉ số số học phải lớn hơn `0` mới được lưu hoặc dùng để tính.
 
 | Thiết lập Định mức Tiết | Thiết lập Hệ số Lớp học phần |
 |:---:|:---:|
@@ -231,7 +231,7 @@ Hệ thống bao gồm **16 màn hình & module chức năng** hoàn chỉnh:
 11. **Thống kê Lớp học phần (`/class-statistics`):** Báo cáo tình hình phân công giảng dạy của toàn bộ lớp học phần trong kỳ.
 12. **Thiết lập Định mức Tiết (`/payment-rates`):** Cấu hình đơn giá thù lao 1 tiết chuẩn theo từng năm học và kỳ học.
 13. **Thiết lập Hệ số Giáo viên (`/teacher-coefficients`):** Quy định hệ số thù lao theo học vị; hỗ trợ sao chép nhanh cấu hình từ năm trước.
-14. **Thiết lập Hệ số Lớp (`/class-coefficients`):** Quy định hệ số phụ trội theo quy mô sĩ số sinh viên của lớp học.
+14. **Thiết lập Hệ số Lớp (`/class-coefficients`):** Quy định hệ số nhân theo quy mô sĩ số sinh viên của lớp học.
 15. **Tính Tiền Dạy (`/payroll`):** Tính toán chi tiết thù lao từng lớp, tổng hợp số tiền của từng giáo viên và toàn trường.
 16. **Báo cáo & Hệ thống (`/reports` & `/system`):** Bộ lọc báo cáo đa chiều, trích xuất dữ liệu CSV, in/lưu PDF chuẩn A4, và công cụ Reset dữ liệu demo.
 
@@ -241,14 +241,17 @@ Hệ thống bao gồm **16 màn hình & module chức năng** hoàn chỉnh:
 
 Công thức tính thù lao giảng dạy được chuẩn hóa theo quy chế đào tạo đại học và bám sát đặc tả nghiệp vụ:
 
-$$\text{Tiền dạy mỗi lớp} = \text{Số tiết} \times (\text{Hệ số học phần} + \text{Hệ số lớp}) \times \text{Định mức tiết} \times \text{Hệ số bằng cấp}$$
+$$\text{Tiền dạy mỗi lớp} = \text{Số tiết} \times \text{Hệ số học phần} \times \text{Hệ số lớp} \times \text{Định mức tiết} \times \text{Hệ số bằng cấp}$$
 
 ### Giải thích các đại lượng:
 - **Số tiết ($N$):** Tổng số tiết giảng dạy thực tế được phân công cho lớp học phần.
 - **Hệ số học phần ($K_{hp}$):** Hệ số độ phức tạp của môn học (ví dụ: lý thuyết đại cương = $1.0$, chuyên ngành/thực hành = $1.2$ - $1.5$).
-- **Hệ số lớp ($K_{lop}$):** Hệ số điều chỉnh dựa trên sĩ số sinh viên thực tế (ví dụ: lớp $\le 40$ SV hệ số $0$, lớp $41 - 70$ SV hệ số $0.1$, lớp $> 70$ SV hệ số $0.2$).
+- **Hệ số lớp ($K_{lop}$):** Hệ số nhân dựa trên sĩ số sinh viên thực tế: `1 - 40` SV dùng `0,9`; `41 - 80` dùng `1,0`; `81 - 120` dùng `1,1`; `121 - 300` dùng `1,2`.
 - **Định mức tiết ($D$):** Đơn giá thù lao cơ bản cho 1 tiết chuẩn (VNĐ/tiết) quy định theo từng kỳ học của năm học tương ứng.
 - **Hệ số bằng cấp ($K_{bc}$):** Hệ số ưu đãi theo học vị/học hàm cao nhất của giảng viên trong năm học (Thạc sĩ = $1.2$, Tiến sĩ = $1.5$, PGS = $1.8$, GS = $2.0$).
+
+Tất cả chỉ số số học ở các danh mục và màn hình tính thử phải lớn hơn `0`.
+Dấu âm bị chặn khi nhập; giá trị `0` không được lưu và không sinh kết quả tính tiền.
 
 ---
 
@@ -319,7 +322,7 @@ Bộ kiểm thử YC7 được xây dựng trên nền tảng **JavaScript + Moc
 Đảm bảo ứng dụng đang chạy tại cổng `3000` (`npm run start` trên bản build), mở một cửa sổ PowerShell mới:
 
 ```powershell
-# Chạy toàn bộ 21 test case ở chế độ Headless
+# Chạy toàn bộ 22 test case ở chế độ Headless
 ./scripts/run-yc7.ps1
 
 # Hoặc quan sát trực tiếp trình duyệt Chrome tự động thao tác
@@ -335,7 +338,7 @@ $env:BASE_URL="http://127.0.0.1:3000"; $env:BROWSER="chrome"; npm run test:junit
 
 - **Báo cáo kết quả JUnit XML:** `tests/selenium-js/reports/junit/yc7-selenium-results.xml`
 - **Ảnh chụp màn hình:** Khi phát hiện lỗi hoặc assert fail, ảnh chụp sẽ tự động lưu vào `evidence/screenshots/`.
-- **Kết quả thực tế:** **21/21 Test Cases PASS tuyệt đối (100%)**.
+- **Kết quả thực tế ngày 07/09/2026:** Selenium JS **22/22 Test Cases PASS (100%)**; bộ smoke test Selenium Python **5/5 PASS**.
 
 ---
 
@@ -353,11 +356,12 @@ Hệ thống tích hợp công cụ kiểm định chất lượng hiệu năng 
 ./scripts/run-yc8.ps1 -JMeterBin "tools\apache-jmeter-5.6.3\bin\jmeter.bat"
 ```
 
-#### Kết quả Đo lường Tham chiếu (Thực tế):
-- **Average Response Time:** **8.96 ms** (Vượt xa ngưỡng yêu cầu $\le 1000$ ms)
-- **95th Percentile (P95):** **35.00 ms** (Vượt xa ngưỡng yêu cầu $\le 2000$ ms)
+#### Kết quả Đo lường Tham chiếu (chạy ngày 07/09/2026):
+- **Tổng số mẫu:** **1.550/1.550 PASS**
+- **Average Response Time:** **8.39 ms** (Vượt xa ngưỡng yêu cầu $\le 1000$ ms)
+- **95th Percentile (P95):** **33 ms** (Vượt xa ngưỡng yêu cầu $\le 2000$ ms)
 - **Error Rate:** **0.00%** (Hoàn hảo, không có bất kỳ request lỗi nào)
-- **Throughput:** **78.10 requests/giây**
+- **Throughput:** **78.39 requests/giây**
 - **Đánh giá chung:** **PASSED ALL PERFORMANCE GATES** 🟢
 
 #### Mở JMeter ở chế độ Giao diện (GUI Mode để quan sát trực quan):
@@ -389,7 +393,7 @@ Quy trình hoạt động trên môi trường máy ảo Ubuntu:
 1. **Thiết lập Môi trường:** Cài đặt Node.js 20 và Java 11.
 2. **Kiểm thử Đơn vị & Cơ sở Dữ liệu:** Chạy Jest test suite, thực hiện Prisma migrate và seed CSDL SQLite riêng cho CI.
 3. **Build & Khởi động Ứng dụng:** Build phiên bản production của Next.js và khởi chạy nền, đợi endpoint `/api/health` sẵn sàng.
-4. **Kiểm thử Giao diện (YC7):** Khởi chạy 21 test case Selenium WebDriver trên Google Chrome Headless.
+4. **Kiểm thử Giao diện (YC7):** Khởi chạy 22 test case Selenium WebDriver trên Google Chrome Headless.
 5. **Cài đặt & Chạy Kiểm thử Hiệu năng (YC8):** Tải Apache JMeter, thực hiện tải 50 VUsers và kiểm tra Performance Gate.
 6. **Lưu trữ Bằng chứng (Artifacts Upload):** Đóng gói và upload tự động các tệp JUnit XML, Screenshot, file `.jtl` và HTML Dashboard lên GitHub Artifacts.
 
@@ -461,7 +465,7 @@ Tất cả các bằng chứng kiểm thử và tài liệu đặc tả đều �
 | **YC4 - Ma trận Truy vết** | Traceability Matrix & Checklist | [`docs/05_Project_Artifacts_Checklists_Traceability.xlsx`](docs/05_Project_Artifacts_Checklists_Traceability.xlsx) | Đầy đủ |
 | **YC5 - SQA Test Plan** | Kế hoạch đảm bảo chất lượng phần mềm | [`docs/02_SQA_Test_Plan.docx`](docs/02_SQA_Test_Plan.docx) | Đầy đủ |
 | **YC6 - Kiểm thử Đơn vị** | Báo cáo kiểm thử Jest & Độ bao phủ 100% | [`evidence/coverage/`](evidence/coverage/) | Đầy đủ |
-| **YC7 - UI Automation** | Báo cáo kiểm thử tự động Selenium WebDriver | [`docs/07_Selenium_WebDriver_Test_Report.docx`](docs/07_Selenium_WebDriver_Test_Report.docx) | PASS 21/21 |
+| **YC7 - UI Automation** | Báo cáo kiểm thử tự động Selenium WebDriver | [`docs/07_Selenium_WebDriver_Test_Report.docx`](docs/07_Selenium_WebDriver_Test_Report.docx) | PASS 22/22 |
 | **YC8 - Performance Test** | Báo cáo hiệu năng JMeter & HTML Dashboard | [`evidence/jmeter-results/html-report/`](evidence/jmeter-results/html-report/) | Gate PASS |
 | **YC9 - Báo cáo Tổng kết** | Báo cáo thực thi kiểm thử & Đánh giá chất lượng | [`docs/03_Test_Execution_and_Review_Report.docx`](docs/03_Test_Execution_and_Review_Report.docx) | Đầy đủ |
 

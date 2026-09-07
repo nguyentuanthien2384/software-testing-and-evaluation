@@ -127,11 +127,11 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
       const page = new CrudPage(driver, route, entityKey, title);
       await page.openCrud();
       for (const field of fields) {
-        await page.fillField(field, '-');
+        await page.fillField(field, '-0.1');
         assert.equal(
           await (await page.byTestId(`field-${field}`)).getAttribute('value'),
           '',
-          `${route} không được giữ dấu âm trong trường ${field}.`
+          `${route} phải chặn toàn bộ giá trị âm trong trường ${field}, không được tự đổi thành số dương.`
         );
       }
     }
@@ -151,6 +151,11 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
       await coefficients.submit();
       await coefficients.waitForText('phải lớn hơn 0');
       assert.equal(await coefficients.rowExists(id), false, 'Bản ghi hệ số 0 không được lưu.');
+
+      await coefficients.fillField('coefficient', '0.95');
+      await coefficients.submit();
+      await coefficients.waitForText('phải theo bước 0.1');
+      assert.equal(await coefficients.rowExists(id), false, 'Bản ghi sai bước 0.1 không được lưu hoặc hiển thị làm tròn sai.');
     } finally {
       await coefficients.openCrud();
       await coefficients.search('');
@@ -289,8 +294,13 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     ];
 
     await payroll.openPayroll();
-    await payroll.fillManualField('class-coef', '-');
-    assert.equal(await payroll.manualFieldValue('class-coef'), '', 'Dấu âm phải bị chặn ngay khi nhập.');
+    await payroll.fillManualField('class-coef', '-0.1');
+    assert.equal(
+      await payroll.manualFieldValue('class-coef'),
+      '',
+      'Toàn bộ giá trị âm phải bị chặn, không được tự đổi -0.1 thành 0.1.'
+    );
+    assert.equal(await payroll.hasCalculatedOutput(), false, 'Giá trị âm bị chặn không được sinh kết quả tính.');
 
     for (const [field, label] of invalidCases) {
       await payroll.calculateManual({ ...valid, [field]: 0 });

@@ -1,7 +1,7 @@
 ============================================================================================
 YC2 EVIDENCE - SQLite migrated/seeded by Prisma + payroll verification
 Database: evidence/db-sqlite/dev.db
-Migrations applied: 4
+Migrations applied: 7
 Records seeded:
    - Degree: 4
    - Department: 5
@@ -15,21 +15,21 @@ Records seeded:
    - ClassCoefficient: 8
 ============================================================================================
 PAYROLL BY ASSIGNMENT:
-GV0001 | ATTT301.01   | 2024-2025 | hours=45 | subject=1.2 | class=+0 | degree=2 | converted=54 | amount=15,444,000 VND
-GV0001 | CSDL101.01   | 2024-2025 | hours=45 | subject=1 | class=+0 | degree=2 | converted=45 | amount=12,870,000 VND
-GV0002 | TKC201.01    | 2025-2026 | hours=45 | subject=1.1 | class=+0 | degree=1.35 | converted=49.5 | amount=10,023,750 VND
-GV0004 | CTDL102.02   | 2024-2025 | hours=60 | subject=1.2 | class=+0.1 | degree=1.5 | converted=78 | amount=16,731,000 VND
-GV0007 | DTU101.01    | 2025-2026 | hours=45 | subject=1 | class=-0.1 | degree=2.1 | converted=40.5 | amount=12,757,500 VND
-GV0008 | WEB201.01    | 2024-2025 | hours=45 | subject=1 | class=+0.1 | degree=1.5 | converted=49.5 | amount=10,617,750 VND
+GV0001 | ATTT301.01   | 2024-2025 | hours=45 | subject=1.2 | class=1 | degree=2 | converted=54 | amount=15,444,000 VND
+GV0001 | CSDL101.01   | 2024-2025 | hours=45 | subject=1 | class=1 | degree=2 | converted=45 | amount=12,870,000 VND
+GV0002 | TKC201.01    | 2025-2026 | hours=45 | subject=1.1 | class=1 | degree=1.35 | converted=49.5 | amount=10,023,750 VND
+GV0004 | CTDL102.02   | 2024-2025 | hours=60 | subject=1.2 | class=1.1 | degree=1.5 | converted=79.2 | amount=16,988,400 VND
+GV0007 | DTU101.01    | 2025-2026 | hours=45 | subject=1 | class=0.9 | degree=2.1 | converted=40.5 | amount=12,757,500 VND
+GV0008 | WEB201.01    | 2024-2025 | hours=45 | subject=1 | class=1.1 | degree=1.5 | converted=49.5 | amount=10,617,750 VND
 --------------------------------------------------------------------------------------------
 TOTAL BY TEACHER AND ACADEMIC YEAR:
    GV0001 - Nguyễn Văn An        | 2024-2025:      28,314,000 VND
    GV0002 - Bùi Thị Hoa          | 2025-2026:      10,023,750 VND
-   GV0004 - Phạm Thị Dung        | 2024-2025:      16,731,000 VND
+   GV0004 - Phạm Thị Dung        | 2024-2025:      16,988,400 VND
    GV0007 - Lê Minh Cường        | 2025-2026:      12,757,500 VND
    GV0008 - Trần Thị Bình        | 2024-2025:      10,617,750 VND
 --------------------------------------------------------------------------------------------
 INTERNAL CHECK:
-   GV0001 CSDL101.01 = 45*(1.0+0.0)*143000*2.0 = 12,870,000
-   GV0001 ATTT301.01 = 45*(1.2+0.0)*143000*2.0 = 15,444,000
+   GV0001 CSDL101.01 = 45*1.0*1.0*143000*2.0 = 12,870,000
+   GV0001 ATTT301.01 = 45*1.2*1.0*143000*2.0 = 15,444,000
    Manual total = 28,314,000 | SQLite = 28,314,000 -> MATCH

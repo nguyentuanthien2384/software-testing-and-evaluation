@@ -62,6 +62,16 @@ describe('validateAppData', () => {
     }
   });
 
+  test('từ chối hệ số lớp không theo bước 0.1 để tránh hiển thị sai giá trị tính', () => {
+    const data = copyData();
+    data.classCoefficients[0] = { ...data.classCoefficients[0], coefficient: 0.95 };
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContain('Hệ số lớp CCOEF-2024-01 phải theo bước 0.1.');
+  });
+
   test('từ chối phân công trùng lớp và số tiết không dương', () => {
     const data = copyData();
     data.assignments.push({ ...data.assignments[0], id: 'ASG-NEW', teachingHours: 0 });

@@ -20,7 +20,8 @@ const fields = [
     "label": "Định mức VND/tiết",
     "type": "number",
     "required": true,
-    "min": "1"
+    "min": "1",
+    "step": "1"
   },
   {
     "name": "effectiveDate",

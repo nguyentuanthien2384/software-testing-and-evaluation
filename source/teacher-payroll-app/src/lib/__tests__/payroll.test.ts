@@ -29,6 +29,16 @@ describe('calculateTeachingPay', () => {
     });
   });
 
+  test('từ chối kết quả thành tiền bị tràn số', () => {
+    expect(() => calculateTeachingPay({
+      hours: 1,
+      subjectCoef: 1,
+      classCoef: 1,
+      rate: Number.MAX_VALUE,
+      degreeCoef: 2
+    })).toThrow('Thành tiền phải là số lớn hơn 0');
+  });
+
   test.each([
     ['số tiết bằng 0', { hours: 0, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
     ['số tiết âm', { hours: -1, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Số tiết'],

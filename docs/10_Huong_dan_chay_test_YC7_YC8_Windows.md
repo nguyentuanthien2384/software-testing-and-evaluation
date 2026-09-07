@@ -60,9 +60,9 @@ npm install
 $env:BASE_URL="http://127.0.0.1:3000"; $env:BROWSER="chrome"; npm run test:junit
 ```
 
-Bộ test gồm 12 ca:
-- **login.e2e.mjs** (6 ca): đăng nhập admin/tester, sai mật khẩu, chặn truy cập khi chưa đăng nhập, phân quyền form admin/tester.
-- **yc7.smoke.e2e.mjs** (6 ca): dashboard, CRUD bằng cấp, trang giáo viên, tính tiền dạy, báo cáo.
+Bộ test hiện bao phủ 22 ca:
+- **login.e2e.mjs** (8 ca): đăng nhập admin/tester, sai mật khẩu, chặn truy cập khi chưa đăng nhập, lưu phiên và phân quyền giao diện/API.
+- **yc7.smoke.e2e.mjs** (14 ca): dashboard, CRUD, dữ liệu hệ số lớp, chặn số âm, từ chối số `0`, tạo lô lớp, sao chép hệ số, kiểm tra xung đột, tính tiền dạy theo công thức nhân và báo cáo.
 
 Kết quả:
 - JUnit XML: `tests/selenium-js/reports/junit/yc7-selenium-results.xml`
@@ -86,6 +86,8 @@ App phải đang chạy. Mở PowerShell:
 ```
 
 Endpoint được kiểm thử: `GET /api/health`, `POST /api/payroll`, `GET /api/reports`.
+Payload tính tiền chỉ dùng các chỉ số lớn hơn `0`; hệ số lớp là hệ số nhân
+`0,9 / 1,0 / 1,1 / 1,2`, không phải mức cộng/trừ.
 
 Ngưỡng mặc định (gate):
 - Average ≤ 1000 ms
@@ -166,8 +168,9 @@ Chạy bộ test hiện có nhưng hiện trình duyệt thật (không headless
 
 ---
 
-## 6. Kết quả tham chiếu (chạy ngày 06/09/2026)
+## 6. Kết quả tham chiếu (chạy ngày 07/09/2026)
 
-- YC7 Selenium JS: **21/21 PASS**; Selenium Python legacy: **5/5 PASS**.
-- YC8 (50 users, 10 loops = 1.550 samples): average **7,67 ms**, P95 **26 ms**,
-  error **0%**, throughput **78,68 request/giây** → **gate PASSED**.
+- YC7 Selenium JS: **22/22 PASS** với quy tắc chỉ số dương và công thức hệ số nhân.
+- YC7 Selenium Python: **5/5 PASS** đối với bộ smoke test tham chiếu.
+- YC8 (50 users, 10 loops = 1.550 samples): **1.550/1.550 PASS**, average **8.39 ms**,
+  P95 **33 ms**, error **0%**, throughput **78.39 request/giây** → **gate PASSED**.

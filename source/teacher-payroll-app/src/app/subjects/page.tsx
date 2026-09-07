@@ -26,14 +26,16 @@ const fields = [
     "label": "Số tín chỉ",
     "type": "number",
     "required": true,
-    "min": "1"
+    "min": "1",
+    "step": "1"
   },
   {
     "name": "totalHours",
     "label": "Số tiết",
     "type": "number",
     "required": true,
-    "min": "1"
+    "min": "1",
+    "step": "1"
   },
   {
     "name": "coefficient",

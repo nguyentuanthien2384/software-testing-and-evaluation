@@ -112,7 +112,8 @@ describe('bảo vệ API', () => {
     ['chuỗi hex', { rate: '0x10' }],
     ['ký pháp mũ', { degreeCoef: '1e2' }],
     ['boolean', { subjectCoef: true }],
-    ['null', { classCoef: null }]
+    ['null', { classCoef: null }],
+    ['kết quả tràn số', { rate: Number.MAX_VALUE, degreeCoef: 2 }]
   ])('API tính lương từ chối %s', async (_case, changed) => {
     const response = await calculatePayroll(payrollRequest({
       hours: 45,

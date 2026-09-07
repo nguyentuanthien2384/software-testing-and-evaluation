@@ -37,6 +37,11 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function isStepAligned(value: number, step: number, base = 0): boolean {
+  const stepCount = (value - base) / step;
+  return Math.abs(stepCount - Math.round(stepCount)) <= 1e-9;
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -190,6 +195,7 @@ export function validateAppData(input: unknown): ValidationResult {
     if (!Number.isInteger(item.minStudents) || item.minStudents <= 0) errors.push(`Sĩ số từ của ${item.id} phải là số nguyên lớn hơn 0.`);
     if (!Number.isInteger(item.maxStudents) || item.maxStudents < item.minStudents) errors.push(`Sĩ số đến của ${item.id} phải lớn hơn hoặc bằng sĩ số từ.`);
     if (!isFiniteNumber(item.coefficient) || item.coefficient <= 0) errors.push(`Hệ số lớp ${item.id} phải lớn hơn 0.`);
+    else if (!isStepAligned(item.coefficient, 0.1, 0.1)) errors.push(`Hệ số lớp ${item.id} phải theo bước 0.1.`);
     const rows = rangesByYear.get(item.year) ?? [];
     rows.push(item);
     rangesByYear.set(item.year, rows);

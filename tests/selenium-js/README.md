@@ -9,7 +9,9 @@ Bộ test này bổ sung YC7 ở mức có thể chạy tự động bằng Sele
   - mở dashboard;
   - thêm mới bằng cấp;
   - kiểm tra trang giáo viên;
-  - tính tiền dạy thủ công theo dữ liệu hợp lệ;
+  - kiểm tra bộ hệ số lớp `0,9 / 1,0 / 1,1 / 1,2` với khoảng sĩ số bắt đầu từ `1`;
+  - xác minh dấu âm bị chặn trên các ô số và giá trị `0` không tạo kết quả tính;
+  - tính tiền dạy thủ công theo công thức nhân với dữ liệu hợp lệ;
   - mở báo cáo tiền dạy.
 - Selector ổn định bằng `data-testid` đã được bổ sung vào UI.
 - Ảnh chụp màn hình khi test fail, lưu về `evidence/screenshots`.
