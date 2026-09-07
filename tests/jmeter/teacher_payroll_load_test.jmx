@@ -125,7 +125,7 @@
             <collectionProp name="Arguments.arguments">
               <elementProp name="" elementType="HTTPArgument">
                 <boolProp name="HTTPArgument.always_encode">false</boolProp>
-                <stringProp name="Argument.value">{&quot;hours&quot;:45,&quot;subjectCoef&quot;:1,&quot;classCoef&quot;:-0.1,&quot;rate&quot;:143000,&quot;degreeCoef&quot;:2}</stringProp>
+                <stringProp name="Argument.value">{&quot;hours&quot;:45,&quot;subjectCoef&quot;:1,&quot;classCoef&quot;:0.9,&quot;rate&quot;:143000,&quot;degreeCoef&quot;:2}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
             </collectionProp>
@@ -137,7 +137,7 @@
               <stringProp name="converted-hours">&quot;convertedHours&quot;:40.5</stringProp>
               <stringProp name="amount">&quot;amount&quot;:11583000</stringProp>
             </collectionProp>
-            <stringProp name="Assertion.custom_message">Payroll response did not match the canonical negative class-coefficient case.</stringProp>
+            <stringProp name="Assertion.custom_message">Payroll response did not match the canonical positive class-multiplier case.</stringProp>
             <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">2</intProp>

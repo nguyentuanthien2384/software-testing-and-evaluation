@@ -16,35 +16,32 @@ import {
 
 describe('calculateTeachingPay', () => {
   test('tính tiền dạy theo công thức chuẩn', () => {
-    expect(calculateTeachingPay({ hours: 45, subjectCoef: 1, classCoef: -0.1, rate: 143000, degreeCoef: 2 })).toEqual({
+    expect(calculateTeachingPay({ hours: 45, subjectCoef: 1, classCoef: 0.9, rate: 143000, degreeCoef: 2 })).toEqual({
       convertedHours: 40.5,
       amount: 11583000
     });
   });
 
-  test('tính được lớp có hệ số cộng', () => {
-    expect(calculateTeachingPay({ hours: 60, subjectCoef: 1.2, classCoef: 0.1, rate: 143000, degreeCoef: 1.5 }).amount).toBe(16731000);
+  test('nhân hệ số lớp vào hệ số học phần', () => {
+    expect(calculateTeachingPay({ hours: 60, subjectCoef: 1.2, classCoef: 1.1, rate: 143000, degreeCoef: 1.5 })).toEqual({
+      convertedHours: 79.2,
+      amount: 16988400
+    });
   });
 
   test.each([
-    ['số tiết bằng 0', { hours: 0, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
-    ['số tiết âm', { hours: -1, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
-    ['hệ số học phần bằng 0', { hours: 45, subjectCoef: 0, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Hệ số học phần'],
-    ['hệ số học phần âm', { hours: 45, subjectCoef: -0.1, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Hệ số học phần'],
-    ['định mức bằng 0', { hours: 45, subjectCoef: 1, classCoef: 0, rate: 0, degreeCoef: 1 }, 'Định mức'],
-    ['định mức âm', { hours: 45, subjectCoef: 1, classCoef: 0, rate: -1, degreeCoef: 1 }, 'Định mức'],
-    ['hệ số bằng cấp bằng 0', { hours: 45, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 0 }, 'Hệ số bằng cấp'],
-    ['hệ số bằng cấp âm', { hours: 45, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: -0.1 }, 'Hệ số bằng cấp']
+    ['số tiết bằng 0', { hours: 0, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
+    ['số tiết âm', { hours: -1, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
+    ['hệ số học phần bằng 0', { hours: 45, subjectCoef: 0, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Hệ số học phần'],
+    ['hệ số học phần âm', { hours: 45, subjectCoef: -0.1, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Hệ số học phần'],
+    ['hệ số lớp bằng 0', { hours: 45, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Hệ số lớp'],
+    ['hệ số lớp âm', { hours: 45, subjectCoef: 1, classCoef: -0.1, rate: 100000, degreeCoef: 1 }, 'Hệ số lớp'],
+    ['định mức bằng 0', { hours: 45, subjectCoef: 1, classCoef: 1, rate: 0, degreeCoef: 1 }, 'Định mức'],
+    ['định mức âm', { hours: 45, subjectCoef: 1, classCoef: 1, rate: -1, degreeCoef: 1 }, 'Định mức'],
+    ['hệ số bằng cấp bằng 0', { hours: 45, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: 0 }, 'Hệ số bằng cấp'],
+    ['hệ số bằng cấp âm', { hours: 45, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: -0.1 }, 'Hệ số bằng cấp']
   ])('không cho %s', (_case, input, expectedError) => {
     expect(() => calculateTeachingPay(input)).toThrow(expectedError);
-  });
-
-  test.each([
-    ['bằng 0', -0.1],
-    ['âm', -0.5]
-  ])('không cho tổng hệ số học phần và hệ số lớp %s', (_case, classCoef) => {
-    expect(() => calculateTeachingPay({ hours: 45, subjectCoef: 0.1, classCoef, rate: 100000, degreeCoef: 1 }))
-      .toThrow('Tổng hệ số học phần và hệ số lớp phải lớn hơn 0');
   });
 
   test('làm tròn chính xác tại ranh giới số thập phân', () => {
@@ -69,10 +66,10 @@ describe('lookup cấu hình', () => {
   });
 
   test.each([
-    [0, -0.1], [40, -0.1],
-    [41, 0], [80, 0],
-    [81, 0.1], [120, 0.1],
-    [121, 0.2], [300, 0.2]
+    [1, 0.9], [40, 0.9],
+    [41, 1], [80, 1],
+    [81, 1.1], [120, 1.1],
+    [121, 1.2], [300, 1.2]
   ])('lấy đúng hệ số lớp tại sĩ số %i', (studentCount, expected) => {
     expect(findClassCoefficient(initialData.classCoefficients, '2024-2025', studentCount)).toBe(expected);
     expect(findClassCoefficient(initialData.classCoefficients, '2025-2026', studentCount)).toBe(expected);

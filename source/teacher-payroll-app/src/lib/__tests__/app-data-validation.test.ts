@@ -37,6 +37,31 @@ describe('validateAppData', () => {
     if (!result.ok) expect(result.errors.join(' ')).toContain('chồng lấn');
   });
 
+  test('từ chối sĩ số lớp bằng 0', () => {
+    const data = copyData();
+    data.classes[0] = { ...data.classes[0], studentCount: 0 };
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContain('Sĩ số lớp CLS-CSDL-01 phải là số nguyên lớn hơn 0.');
+  });
+
+  test('từ chối sĩ số bắt đầu và hệ số lớp không dương', () => {
+    const data = copyData();
+    data.classCoefficients[0] = { ...data.classCoefficients[0], minStudents: 0, coefficient: 0 };
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors).toEqual(expect.arrayContaining([
+        'Sĩ số từ của CCOEF-2024-01 phải là số nguyên lớn hơn 0.',
+        'Hệ số lớp CCOEF-2024-01 phải lớn hơn 0.'
+      ]));
+    }
+  });
+
   test('từ chối phân công trùng lớp và số tiết không dương', () => {
     const data = copyData();
     data.assignments.push({ ...data.assignments[0], id: 'ASG-NEW', teachingHours: 0 });

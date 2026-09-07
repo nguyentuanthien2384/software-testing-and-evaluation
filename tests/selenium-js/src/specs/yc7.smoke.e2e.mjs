@@ -94,16 +94,16 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     assert.match(text, /Nguyễn Văn An/);
   });
 
-  it('YC7-CLASS-COEF-001 hiển thị đúng mức điều chỉnh lớp ở cả hai năm học', async function () {
+  it('YC7-CLASS-COEF-001 hiển thị đúng hệ số nhân của lớp ở cả hai năm học', async function () {
     const coefficients = new CrudPage(driver, '/class-coefficients', 'classCoefficients', 'Thiết lập Hệ số lớp');
     await coefficients.openCrud();
 
     for (const year of ['2024', '2025']) {
       const expected = [
-        [`CCOEF-${year}-01`, /0\s+40\s+-0,1/],
-        [`CCOEF-${year}-02`, /41\s+80\s+0,0/],
-        [`CCOEF-${year}-03`, /81\s+120\s+\+0,1/],
-        [`CCOEF-${year}-04`, /121\s+300\s+\+0,2/]
+        [`CCOEF-${year}-01`, /1\s+40\s+0,9/],
+        [`CCOEF-${year}-02`, /41\s+80\s+1,0/],
+        [`CCOEF-${year}-03`, /81\s+120\s+1,1/],
+        [`CCOEF-${year}-04`, /121\s+300\s+1,2/]
       ];
       for (const [id, pattern] of expected) {
         const row = await coefficients.byTestId(`classCoefficients-row-${id}`);
@@ -112,16 +112,32 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     }
   });
 
-  it('YC7-CLASS-COEF-INPUT-001 cho phép nhập mức điều chỉnh âm bằng bàn phím', async function () {
-    const coefficients = new CrudPage(driver, '/class-coefficients', 'classCoefficients', 'Thiết lập Hệ số lớp');
-    await coefficients.openCrud();
-    await (await coefficients.byTestId('classCoefficients-edit-CCOEF-2024-01')).click();
-    await coefficients.fillField('coefficient', '-0.2');
-    assert.equal(await (await coefficients.byTestId('field-coefficient')).getAttribute('value'), '-0.2');
-    // Không submit: ca này chỉ kiểm tra khả năng nhập số âm và không thay đổi dữ liệu nền.
+  it('YC7-POSITIVE-INPUT-001 chặn dấu âm trên tất cả ô số nghiệp vụ', async function () {
+    const pages = [
+      ['/degrees', 'degrees', 'Quản lý Bằng cấp', ['coefficient']],
+      ['/subjects', 'subjects', 'Quản lý Học phần', ['credits', 'totalHours', 'coefficient']],
+      ['/classes', 'classes', 'Quản lý Lớp học phần', ['studentCount']],
+      ['/assignments', 'assignments', 'Phân công giảng viên', ['teachingHours']],
+      ['/payment-rates', 'paymentRates', 'Thiết lập Định mức tiết', ['amount']],
+      ['/teacher-coefficients', 'degreeCoefficients', 'Thiết lập Hệ số giáo viên', ['coefficient']],
+      ['/class-coefficients', 'classCoefficients', 'Thiết lập Hệ số lớp', ['minStudents', 'maxStudents', 'coefficient']]
+    ];
+
+    for (const [route, entityKey, title, fields] of pages) {
+      const page = new CrudPage(driver, route, entityKey, title);
+      await page.openCrud();
+      for (const field of fields) {
+        await page.fillField(field, '-');
+        assert.equal(
+          await (await page.byTestId(`field-${field}`)).getAttribute('value'),
+          '',
+          `${route} không được giữ dấu âm trong trường ${field}.`
+        );
+      }
+    }
   });
 
-  it('YC7-CLASS-COEF-CRUD-001 lưu và hiển thị đúng mức điều chỉnh âm', async function () {
+  it('YC7-CLASS-COEF-CRUD-001 từ chối hệ số lớp bằng 0', async function () {
     const coefficients = new CrudPage(driver, '/class-coefficients', 'classCoefficients', 'Thiết lập Hệ số lớp');
     const id = `CCOEF-E2E-${Date.now()}`;
 
@@ -129,15 +145,12 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
       await coefficients.openCrud();
       await coefficients.fillField('id', id);
       await coefficients.fillField('year', '2099-2100');
-      await coefficients.fillField('minStudents', '0');
+      await coefficients.fillField('minStudents', '1');
       await coefficients.fillField('maxStudents', '40');
-      await coefficients.fillField('coefficient', '-0.1');
+      await coefficients.fillField('coefficient', '0');
       await coefficients.submit();
-      await coefficients.waitForText('Thêm dữ liệu thành công.');
-
-      await coefficients.search(id);
-      const row = await coefficients.byTestId(`classCoefficients-row-${id}`);
-      assert.match(await row.getText(), /2099-2100\s+0\s+40\s+-0,1/);
+      await coefficients.waitForText('phải lớn hơn 0');
+      assert.equal(await coefficients.rowExists(id), false, 'Bản ghi hệ số 0 không được lưu.');
     } finally {
       await coefficients.openCrud();
       await coefficients.search('');
@@ -263,6 +276,28 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
       assert.match(await payroll.amountText(), new RegExp(testCase.expectedAmountText.replaceAll('.', '\\.')));
     });
   }
+
+  it('YC7-PAY-VALIDATION-001 chỉ tính khi mọi chỉ số lớn hơn 0', async function () {
+    const payroll = new PayrollPage(driver);
+    const valid = { hours: 45, subjectCoef: 1, classCoef: 0.9, rate: 143000, degreeCoef: 2 };
+    const invalidCases = [
+      ['hours', 'Số tiết'],
+      ['subjectCoef', 'Hệ số học phần'],
+      ['classCoef', 'Hệ số lớp'],
+      ['rate', 'Định mức'],
+      ['degreeCoef', 'Hệ số bằng cấp']
+    ];
+
+    await payroll.openPayroll();
+    await payroll.fillManualField('class-coef', '-');
+    assert.equal(await payroll.manualFieldValue('class-coef'), '', 'Dấu âm phải bị chặn ngay khi nhập.');
+
+    for (const [field, label] of invalidCases) {
+      await payroll.calculateManual({ ...valid, [field]: 0 });
+      assert.match(await payroll.errorText(), new RegExp(`${label}.*phải.*lớn hơn 0`, 'i'));
+      assert.equal(await payroll.hasCalculatedOutput(), false, `Không được hiển thị kết quả khi ${field} = 0.`);
+    }
+  });
 
   it('YC7-REPORT-001 mở báo cáo và kiểm tra dữ liệu tổng hợp', async function () {
     const reports = new ReportsPage(driver);

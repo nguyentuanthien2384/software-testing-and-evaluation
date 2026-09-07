@@ -48,7 +48,7 @@
         <boolProp name="recycle">true</boolProp>
         <stringProp name="shareMode">shareMode.all</stringProp>
         <boolProp name="stopThread">false</boolProp>
-        <stringProp name="variableNames">hours,subjectCoef,classCoef,rate,degreeCoef</stringProp>
+        <stringProp name="variableNames">hours,subjectCoef,classCoef,rate,degreeCoef,expectedConvertedHours,expectedAmount</stringProp>
       </CSVDataSet>
       <hashTree/>
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Baseline Load Profile" enabled="true">
@@ -126,11 +126,12 @@
           </elementProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert payroll amount" enabled="true">
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert multiplicative payroll result" enabled="true">
             <collectionProp name="Asserion.test_strings">
-              <stringProp name="amount">amount</stringProp>
-              <stringProp name="convertedHours">convertedHours</stringProp>
+              <stringProp name="convertedHours">&quot;convertedHours&quot;:${expectedConvertedHours}</stringProp>
+              <stringProp name="amount">&quot;amount&quot;:${expectedAmount}</stringProp>
             </collectionProp>
+            <stringProp name="Assertion.custom_message">Payroll response did not match hours * subjectCoef * classCoef * rate * degreeCoef.</stringProp>
             <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
             <boolProp name="Assertion.assume_success">false</boolProp>
             <intProp name="Assertion.test_type">2</intProp>

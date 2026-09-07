@@ -6,7 +6,7 @@ import { generateNextTeacherCode } from '@/lib/payroll';
 import { getSemesterStatus, validateAppData, validateEntityMutation } from '@/lib/app-data-validation';
 import { buildTeachingClassBatch } from '@/lib/class-generation';
 import { copyDegreeCoefficients, nextAcademicYear } from '@/lib/coefficient-copy';
-import { parseNumericDraft } from '@/lib/numeric-input';
+import { isNonNegativeNumericDraft, parseNumericDraft } from '@/lib/numeric-input';
 import { useAppData } from '@/lib/use-app-data';
 import { useAuth } from '@/lib/use-auth';
 
@@ -50,7 +50,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Row>(() => buildEmptyRow(fields, entityKey, rows, idPrefix));
   const [message, setMessage] = useState<string>('');
-  const [batchCount, setBatchCount] = useState(1);
+  const [batchCount, setBatchCount] = useState('1');
   const [copySourceYear, setCopySourceYear] = useState('');
   const [copyTargetYear, setCopyTargetYear] = useState('');
 
@@ -103,7 +103,8 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
     }
     const normalized = normalizeRow(form, visibleFields);
     const errors = validateRow(normalized, visibleFields);
-    if (!editingId && allowBulkCreate && entityKey === 'classes' && batchCount !== 1) {
+    const normalizedBatchCount = parseNumericDraft(batchCount);
+    if (!editingId && allowBulkCreate && entityKey === 'classes' && normalizedBatchCount !== 1) {
       errors.push(...validateEntityMutation(entityKey, normalized, data, editingId));
       if (errors.length > 0) {
         setMessage(Array.from(new Set(errors)).join(' '));
@@ -111,7 +112,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
       }
       const batch = buildTeachingClassBatch(
         normalized as unknown as AppData['classes'][number],
-        batchCount,
+        normalizedBatchCount,
         data.classes
       );
       if (!batch.ok) {
@@ -129,7 +130,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
         return;
       }
       setMessage(`Đã thêm ${batch.classes.length} lớp học phần thành công.`);
-      setBatchCount(1);
+      setBatchCount('1');
       startCreate({ keepMessage: true });
       return;
     }
@@ -223,7 +224,23 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
               {allowBulkCreate && !editingId && (
                 <label>
                   Số lượng lớp
-                  <input data-testid="classes-batch-count" type="number" min="1" max="50" value={batchCount} disabled={saving || !loaded || Boolean(loadError)} onChange={(event) => setBatchCount(Number(event.target.value))} />
+                  <input
+                    aria-label="Số lượng lớp"
+                    aria-required="true"
+                    data-testid="classes-batch-count"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="1"
+                    max="50"
+                    step="1"
+                    required
+                    value={batchCount}
+                    disabled={saving || !loaded || Boolean(loadError)}
+                    onChange={(event) => {
+                      if (/^\d*$/.test(event.target.value)) setBatchCount(event.target.value);
+                    }}
+                  />
                 </label>
               )}
               <button className="primary-btn full" data-testid={`${entityKey}-submit-button`} type="submit" disabled={saving || !loaded || Boolean(loadError)}>{saving ? 'Đang lưu...' : editingId ? 'Cập nhật' : 'Thêm'}</button>
@@ -301,9 +318,7 @@ function renderField(field: FieldConfig, form: Row, setForm: (row: Row) => void,
     disabled,
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       const raw = event.target.value;
-      // Keep numeric fields as drafts while the user is typing. Converting on
-      // every keystroke turns the transient "-" into zero and silently changes
-      // negative values (for example -0.1) into positive ones.
+      if (field.type === 'number' && !isNonNegativeNumericDraft(raw)) return;
       setForm({ ...form, [field.name]: raw });
     }
   };
@@ -331,6 +346,11 @@ function renderField(field: FieldConfig, form: Row, setForm: (row: Row) => void,
         inputMode="decimal"
         data-numeric-input="true"
         aria-label={field.label}
+        aria-required={field.required || undefined}
+        min={field.min}
+        max={field.max}
+        step={field.step ?? 'any'}
+        pattern="[0-9]*([.,][0-9]*)?"
       />
     );
   }
@@ -366,7 +386,7 @@ function buildEmptyRow(fields: FieldConfig[], entityKey: EntityKey, rows: Row[],
   const row: Row = { id: createId(entityKey, rows, prefix) };
   for (const field of fields) {
     if (field.name === 'id' || field.tableOnly) continue;
-    if (field.type === 'number') row[field.name] = 0;
+    if (field.type === 'number') row[field.name] = '';
     else if (field.type === 'date') row[field.name] = new Date().toISOString().slice(0, 10);
     else if (field.options?.length) row[field.name] = field.options[0].value;
     else row[field.name] = '';
@@ -398,8 +418,32 @@ function normalizeRow(row: Row, fields: FieldConfig[]): Row {
 function validateRow(row: Row, fields: FieldConfig[]): string[] {
   const errors: string[] = [];
   for (const field of fields) {
-    if (field.required && (row[field.name] === '' || row[field.name] === undefined || row[field.name] === null)) {
+    const value = row[field.name];
+    const missing = value === '' || value === undefined || value === null;
+    if (field.required && missing) {
       errors.push(`${field.label} là bắt buộc.`);
+      continue;
+    }
+    if (field.type !== 'number' || missing) continue;
+
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      errors.push(`${field.label} phải là số hợp lệ.`);
+      continue;
+    }
+    if (value <= 0) {
+      errors.push(`${field.label} phải là số lớn hơn 0.`);
+      continue;
+    }
+
+    const minimum = field.min === undefined ? undefined : Number(field.min);
+    if (minimum !== undefined && Number.isFinite(minimum) && value < minimum) {
+      errors.push(`${field.label} phải lớn hơn hoặc bằng ${field.min}.`);
+      continue;
+    }
+
+    const maximum = field.max === undefined ? undefined : Number(field.max);
+    if (maximum !== undefined && Number.isFinite(maximum) && value > maximum) {
+      errors.push(`${field.label} phải nhỏ hơn hoặc bằng ${field.max}.`);
     }
   }
   return errors;

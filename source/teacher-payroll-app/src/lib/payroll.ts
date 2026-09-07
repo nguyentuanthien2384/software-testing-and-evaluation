@@ -19,18 +19,11 @@ export function assertPositiveNumber(value: number, fieldName: string): void {
 export function calculateTeachingPay(input: PayrollInput): PayrollResult {
   assertPositiveNumber(input.hours, 'Số tiết');
   assertPositiveNumber(input.subjectCoef, 'Hệ số học phần');
+  assertPositiveNumber(input.classCoef, 'Hệ số lớp');
   assertPositiveNumber(input.rate, 'Định mức');
   assertPositiveNumber(input.degreeCoef, 'Hệ số bằng cấp');
-  if (!Number.isFinite(input.classCoef)) {
-    throw new Error('Hệ số lớp phải là số.');
-  }
 
-  const totalCoefficient = input.subjectCoef + input.classCoef;
-  if (!Number.isFinite(totalCoefficient) || totalCoefficient <= 0) {
-    throw new Error('Tổng hệ số học phần và hệ số lớp phải lớn hơn 0.');
-  }
-
-  const convertedHours = round(input.hours * totalCoefficient, 2);
+  const convertedHours = round(input.hours * input.subjectCoef * input.classCoef, 2);
   if (!Number.isFinite(convertedHours) || convertedHours <= 0) {
     throw new Error('Tiết quy đổi phải là số lớn hơn 0.');
   }

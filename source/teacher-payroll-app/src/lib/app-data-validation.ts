@@ -157,7 +157,7 @@ export function validateAppData(input: unknown): ValidationResult {
     if (!isNonEmptyString(item.code)) errors.push(`Lớp ${item.id} thiếu mã lớp.`);
     if (!subjectIds.has(item.subjectId)) errors.push(`${item.id}: học phần tham chiếu không tồn tại.`);
     if (!semesterIds.has(item.semesterId)) errors.push(`${item.id}: kỳ học tham chiếu không tồn tại.`);
-    if (!Number.isInteger(item.studentCount) || item.studentCount < 0) errors.push(`Sĩ số lớp ${item.id} phải là số nguyên không âm.`);
+    if (!Number.isInteger(item.studentCount) || item.studentCount <= 0) errors.push(`Sĩ số lớp ${item.id} phải là số nguyên lớn hơn 0.`);
   }
   for (const value of duplicateValues(data.classes, (item) => item.code)) errors.push(`Mã lớp ${value} đã tồn tại.`);
 
@@ -187,9 +187,9 @@ export function validateAppData(input: unknown): ValidationResult {
   const rangesByYear = new Map<string, AppData['classCoefficients']>();
   for (const item of data.classCoefficients) {
     if (!isValidAcademicYear(item.year)) errors.push(`Năm học của hệ số lớp ${item.id} không hợp lệ.`);
-    if (!Number.isInteger(item.minStudents) || item.minStudents < 0) errors.push(`Sĩ số từ của ${item.id} phải là số nguyên không âm.`);
+    if (!Number.isInteger(item.minStudents) || item.minStudents <= 0) errors.push(`Sĩ số từ của ${item.id} phải là số nguyên lớn hơn 0.`);
     if (!Number.isInteger(item.maxStudents) || item.maxStudents < item.minStudents) errors.push(`Sĩ số đến của ${item.id} phải lớn hơn hoặc bằng sĩ số từ.`);
-    if (!isFiniteNumber(item.coefficient)) errors.push(`Hệ số lớp ${item.id} phải là một số.`);
+    if (!isFiniteNumber(item.coefficient) || item.coefficient <= 0) errors.push(`Hệ số lớp ${item.id} phải lớn hơn 0.`);
     const rows = rangesByYear.get(item.year) ?? [];
     rows.push(item);
     rangesByYear.set(item.year, rows);
@@ -204,7 +204,6 @@ export function validateAppData(input: unknown): ValidationResult {
 
   for (const assignment of data.assignments) {
     const teachingClass = data.classes.find((item) => item.id === assignment.classId);
-    const subject = teachingClass ? data.subjects.find((item) => item.id === teachingClass.subjectId) : undefined;
     const semester = teachingClass ? data.semesters.find((item) => item.id === teachingClass.semesterId) : undefined;
     const classCoefficient = teachingClass && semester
       ? data.classCoefficients.find((item) => item.year === semester.year && teachingClass.studentCount >= item.minStudents && teachingClass.studentCount <= item.maxStudents)
@@ -217,9 +216,6 @@ export function validateAppData(input: unknown): ValidationResult {
     }
     if (teachingClass && semester && !classCoefficient) {
       errors.push(`${assignment.id}: chưa thiết lập hệ số lớp cho sĩ số ${teachingClass.studentCount} trong năm học ${semester.year}.`);
-    }
-    if (subject && classCoefficient && subject.coefficient + classCoefficient.coefficient <= 0) {
-      errors.push(`${assignment.id}: tổng hệ số học phần và hệ số lớp phải lớn hơn 0.`);
     }
   }
 

@@ -1,10 +1,22 @@
 import { PUT as updateState } from '../../app/api/state/route';
 import { POST as login } from '../../app/api/auth/login/route';
+import { POST as calculatePayroll } from '../../app/api/payroll/route';
 import { initialData } from '../initial-data';
 import { createSessionToken, SESSION_COOKIE } from '../session';
 
 function cookie(user: { username: string; displayName: string; role: 'admin' | 'tester' }) {
   return `${SESSION_COOKIE}=${encodeURIComponent(createSessionToken(user))}`;
+}
+
+function payrollRequest(body: unknown) {
+  return new Request('http://localhost/api/payroll', {
+    method: 'POST',
+    headers: {
+      cookie: cookie({ username: 'tester', displayName: 'Kiểm thử viên', role: 'tester' }),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
 }
 
 describe('bảo vệ API', () => {
@@ -76,5 +88,41 @@ describe('bảo vệ API', () => {
     }));
     expect(failure.status).toBe(401);
     expect(failure.headers.get('set-cookie')).toBeNull();
+  });
+
+  test('API tính lương chấp nhận các chỉ số thập phân dương', async () => {
+    const response = await calculatePayroll(payrollRequest({
+      hours: '45',
+      subjectCoef: '1.2',
+      classCoef: '0.9',
+      rate: 143000,
+      degreeCoef: '2'
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      convertedHours: 48.6,
+      amount: 13899600
+    });
+  });
+
+  test.each([
+    ['số 0', { hours: 0 }],
+    ['số âm', { classCoef: -0.1 }],
+    ['chuỗi hex', { rate: '0x10' }],
+    ['ký pháp mũ', { degreeCoef: '1e2' }],
+    ['boolean', { subjectCoef: true }],
+    ['null', { classCoef: null }]
+  ])('API tính lương từ chối %s', async (_case, changed) => {
+    const response = await calculatePayroll(payrollRequest({
+      hours: 45,
+      subjectCoef: 1.2,
+      classCoef: 0.9,
+      rate: 143000,
+      degreeCoef: 2,
+      ...changed
+    }));
+
+    expect(response.status).toBe(400);
   });
 });

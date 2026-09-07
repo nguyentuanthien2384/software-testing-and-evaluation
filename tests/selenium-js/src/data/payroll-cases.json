@@ -1,15 +1,15 @@
 [
   {
     "id": "YC7-PAY-001",
-    "name": "Tính tiền thủ công với mức điều chỉnh lớp âm",
-    "input": { "hours": 45, "subjectCoef": 1, "classCoef": -0.1, "rate": 143000, "degreeCoef": 2 },
+    "name": "Tính tiền thủ công với hệ số lớp 0,9",
+    "input": { "hours": 45, "subjectCoef": 1, "classCoef": 0.9, "rate": 143000, "degreeCoef": 2 },
     "expectedConvertedHours": "40.5",
     "expectedAmountText": "11.583.000"
   },
   {
     "id": "YC7-PAY-002",
-    "name": "Tính tiền thủ công với hệ số lớp bằng 0",
-    "input": { "hours": 30, "subjectCoef": 1.2, "classCoef": 0, "rate": 143000, "degreeCoef": 1.5 },
+    "name": "Tính tiền thủ công với hệ số lớp 1,0",
+    "input": { "hours": 30, "subjectCoef": 1.2, "classCoef": 1, "rate": 143000, "degreeCoef": 1.5 },
     "expectedConvertedHours": "36",
     "expectedAmountText": "7.722.000"
   }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { calculateAllPayrollLinesSafely, calculateTeachingPay, formatCurrency } from '@/lib/payroll';
-import { parseNumericDraft } from '@/lib/numeric-input';
+import { isNonNegativeNumericDraft, parseNumericDraft } from '@/lib/numeric-input';
 import { useAppData } from '@/lib/use-app-data';
 
 export function PayrollCalculationPage() {
@@ -10,28 +10,48 @@ export function PayrollCalculationPage() {
   const { lines, errors: calculationErrors } = calculateAllPayrollLinesSafely(data);
   const [teacherId, setTeacherId] = useState('');
   const [year, setYear] = useState('');
-  const [manual, setManual] = useState({ hours: '45', subjectCoef: '1', classCoef: '0', rate: '143000', degreeCoef: '1.5' });
+  const [manual, setManual] = useState({ hours: '', subjectCoef: '', classCoef: '', rate: '', degreeCoef: '' });
 
   const filtered = useMemo(
     () => lines.filter((line) => (!teacherId || line.teacherId === teacherId) && (!year || line.year === year)),
     [lines, teacherId, year]
   );
   const { manualResult, manualError } = useMemo(() => {
+    if (Object.values(manual).every((value) => value === '')) {
+      return { manualResult: null, manualError: '' };
+    }
+
+    const inputs = [
+      { label: 'Số tiết', value: parseNumericDraft(manual.hours) },
+      { label: 'Hệ số học phần', value: parseNumericDraft(manual.subjectCoef) },
+      { label: 'Hệ số lớp', value: parseNumericDraft(manual.classCoef) },
+      { label: 'Định mức', value: parseNumericDraft(manual.rate) },
+      { label: 'Hệ số bằng cấp', value: parseNumericDraft(manual.degreeCoef) }
+    ];
+    const invalidInput = inputs.find((input) => !Number.isFinite(input.value) || input.value <= 0);
+    if (invalidInput) {
+      return { manualResult: null, manualError: `${invalidInput.label} phải là số lớn hơn 0.` };
+    }
+
     try {
       return {
         manualResult: calculateTeachingPay({
-          hours: parseNumericDraft(manual.hours),
-          subjectCoef: parseNumericDraft(manual.subjectCoef),
-          classCoef: parseNumericDraft(manual.classCoef),
-          rate: parseNumericDraft(manual.rate),
-          degreeCoef: parseNumericDraft(manual.degreeCoef)
+          hours: inputs[0].value,
+          subjectCoef: inputs[1].value,
+          classCoef: inputs[2].value,
+          rate: inputs[3].value,
+          degreeCoef: inputs[4].value
         }),
         manualError: ''
       };
     } catch (error) {
-      return { manualResult: { convertedHours: 0, amount: 0 }, manualError: error instanceof Error ? error.message : 'Lỗi tính toán.' };
+      return { manualResult: null, manualError: error instanceof Error ? error.message : 'Lỗi tính toán.' };
     }
   }, [manual]);
+
+  function updateManualValue(field: keyof typeof manual, value: string) {
+    if (isNonNegativeNumericDraft(value)) setManual((current) => ({ ...current, [field]: value }));
+  }
   const total = filtered.reduce((sum, line) => sum + line.amount, 0);
   const years = Array.from(new Set(data.semesters.map((semester) => semester.year)));
 
@@ -91,16 +111,21 @@ export function PayrollCalculationPage() {
         <div className="panel">
           <h2>Tính thử thủ công</h2>
           <form className="form-grid" data-testid="payroll-manual-form">
-            <label>Số tiết<input id="hours" data-testid="payroll-hours-input" type="text" inputMode="decimal" value={manual.hours} onChange={(event) => setManual({ ...manual, hours: event.target.value })} /></label>
-            <label>Hệ số học phần<input id="subjectCoef" data-testid="payroll-subject-coef-input" type="text" inputMode="decimal" value={manual.subjectCoef} onChange={(event) => setManual({ ...manual, subjectCoef: event.target.value })} /></label>
-            <label>Hệ số lớp<input id="classCoef" data-testid="payroll-class-coef-input" type="text" inputMode="decimal" value={manual.classCoef} onChange={(event) => setManual({ ...manual, classCoef: event.target.value })} /></label>
-            <label>Định mức<input id="rate" data-testid="payroll-rate-input" type="text" inputMode="decimal" value={manual.rate} onChange={(event) => setManual({ ...manual, rate: event.target.value })} /></label>
-            <label>Hệ số bằng cấp<input id="degreeCoef" data-testid="payroll-degree-coef-input" type="text" inputMode="decimal" value={manual.degreeCoef} onChange={(event) => setManual({ ...manual, degreeCoef: event.target.value })} /></label>
+            <label>Số tiết<input id="hours" aria-label="Số tiết" aria-required="true" data-testid="payroll-hours-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.hours} onChange={(event) => updateManualValue('hours', event.target.value)} /></label>
+            <label>Hệ số học phần<input id="subjectCoef" aria-label="Hệ số học phần" aria-required="true" data-testid="payroll-subject-coef-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.subjectCoef} onChange={(event) => updateManualValue('subjectCoef', event.target.value)} /></label>
+            <label>Hệ số lớp<input id="classCoef" aria-label="Hệ số lớp" aria-required="true" data-testid="payroll-class-coef-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.classCoef} onChange={(event) => updateManualValue('classCoef', event.target.value)} /></label>
+            <label>Định mức<input id="rate" aria-label="Định mức" aria-required="true" data-testid="payroll-rate-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.rate} onChange={(event) => updateManualValue('rate', event.target.value)} /></label>
+            <label>Hệ số bằng cấp<input id="degreeCoef" aria-label="Hệ số bằng cấp" aria-required="true" data-testid="payroll-degree-coef-input" type="text" inputMode="decimal" min="0" step="any" pattern="[0-9]*([.,][0-9]*)?" required value={manual.degreeCoef} onChange={(event) => updateManualValue('degreeCoef', event.target.value)} /></label>
           </form>
           <div id="result" data-testid="payroll-result-box" className="result-box">
-            {manualError && <p data-testid="payroll-error" style={{ color: '#e53e3e' }}>{manualError}</p>}
-            <p id="converted-hours" data-testid="payroll-converted-hours">Tiết quy đổi: <strong>{manualResult.convertedHours}</strong></p>
-            <p id="amount" data-testid="payroll-amount">Thành tiền: <strong>{formatCurrency(manualResult.amount)}</strong></p>
+            {manualError && <p data-testid="payroll-error" role="alert" style={{ color: '#e53e3e' }}>{manualError}</p>}
+            {!manualError && !manualResult && <p data-testid="payroll-pending">Nhập đầy đủ các chỉ số lớn hơn 0 để tính.</p>}
+            {manualResult && (
+              <>
+                <p id="converted-hours" data-testid="payroll-converted-hours">Tiết quy đổi: <strong>{manualResult.convertedHours}</strong></p>
+                <p id="amount" data-testid="payroll-amount">Thành tiền: <strong>{formatCurrency(manualResult.amount)}</strong></p>
+              </>
+            )}
           </div>
         </div>
       </section>

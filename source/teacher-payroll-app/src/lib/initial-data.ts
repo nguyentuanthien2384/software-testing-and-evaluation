@@ -68,13 +68,13 @@ export const initialData: AppData = {
     { id: 'DCOEF-2025-CN', year: '2025-2026', degreeId: 'DEG-CN', coefficient: 1.15 }
   ],
   classCoefficients: [
-    { id: 'CCOEF-2024-01', year: '2024-2025', minStudents: 0, maxStudents: 40, coefficient: -0.1 },
-    { id: 'CCOEF-2024-02', year: '2024-2025', minStudents: 41, maxStudents: 80, coefficient: 0 },
-    { id: 'CCOEF-2024-03', year: '2024-2025', minStudents: 81, maxStudents: 120, coefficient: 0.1 },
-    { id: 'CCOEF-2024-04', year: '2024-2025', minStudents: 121, maxStudents: 300, coefficient: 0.2 },
-    { id: 'CCOEF-2025-01', year: '2025-2026', minStudents: 0, maxStudents: 40, coefficient: -0.1 },
-    { id: 'CCOEF-2025-02', year: '2025-2026', minStudents: 41, maxStudents: 80, coefficient: 0 },
-    { id: 'CCOEF-2025-03', year: '2025-2026', minStudents: 81, maxStudents: 120, coefficient: 0.1 },
-    { id: 'CCOEF-2025-04', year: '2025-2026', minStudents: 121, maxStudents: 300, coefficient: 0.2 }
+    { id: 'CCOEF-2024-01', year: '2024-2025', minStudents: 1, maxStudents: 40, coefficient: 0.9 },
+    { id: 'CCOEF-2024-02', year: '2024-2025', minStudents: 41, maxStudents: 80, coefficient: 1.0 },
+    { id: 'CCOEF-2024-03', year: '2024-2025', minStudents: 81, maxStudents: 120, coefficient: 1.1 },
+    { id: 'CCOEF-2024-04', year: '2024-2025', minStudents: 121, maxStudents: 300, coefficient: 1.2 },
+    { id: 'CCOEF-2025-01', year: '2025-2026', minStudents: 1, maxStudents: 40, coefficient: 0.9 },
+    { id: 'CCOEF-2025-02', year: '2025-2026', minStudents: 41, maxStudents: 80, coefficient: 1.0 },
+    { id: 'CCOEF-2025-03', year: '2025-2026', minStudents: 81, maxStudents: 120, coefficient: 1.1 },
+    { id: 'CCOEF-2025-04', year: '2025-2026', minStudents: 121, maxStudents: 300, coefficient: 1.2 }
   ]
 };

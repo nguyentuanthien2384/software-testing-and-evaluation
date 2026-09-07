@@ -42,7 +42,7 @@ const fields = [
     "label": "Sĩ số",
     "type": "number",
     "required": true,
-    "min": "0"
+    "min": "1"
   },
   {
     "name": "note",

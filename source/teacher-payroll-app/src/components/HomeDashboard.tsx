@@ -77,7 +77,7 @@ export function HomeDashboard() {
         <div>
           <h2>Công thức tính</h2>
           <div className="formula-box">
-            Tiền dạy mỗi lớp = Số tiết × (Hệ số học phần + Hệ số lớp) × Định mức
+            Tiền dạy mỗi lớp = Số tiết × Hệ số học phần × Hệ số lớp × Định mức
             × Hệ số bằng cấp
           </div>
         </div>
