@@ -168,9 +168,9 @@ Chạy bộ test hiện có nhưng hiện trình duyệt thật (không headless
 
 ---
 
-## 6. Kết quả tham chiếu (chạy ngày 07/09/2026)
+## 6. Kết quả tham chiếu (chạy ngày 08/09/2026)
 
 - YC7 Selenium JS: **22/22 PASS** với quy tắc chỉ số dương và công thức hệ số nhân.
 - YC7 Selenium Python: **5/5 PASS** đối với bộ smoke test tham chiếu.
-- YC8 (50 users, 10 loops = 1.550 samples): **1.550/1.550 PASS**, average **8.39 ms**,
-  P95 **33 ms**, error **0%**, throughput **78.39 request/giây** → **gate PASSED**.
+- YC8 (50 users, 10 loops = 1.550 samples): **1.550/1.550 PASS**, average **7.62 ms**,
+  P95 **27 ms**, error **0%**, throughput **78.59 request/giây** → **gate PASSED**.

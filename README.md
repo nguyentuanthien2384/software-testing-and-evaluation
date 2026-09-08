@@ -338,7 +338,7 @@ $env:BASE_URL="http://127.0.0.1:3000"; $env:BROWSER="chrome"; npm run test:junit
 
 - **Báo cáo kết quả JUnit XML:** `tests/selenium-js/reports/junit/yc7-selenium-results.xml`
 - **Ảnh chụp màn hình:** Khi phát hiện lỗi hoặc assert fail, ảnh chụp sẽ tự động lưu vào `evidence/screenshots/`.
-- **Kết quả thực tế ngày 07/09/2026:** Selenium JS **22/22 Test Cases PASS (100%)**; bộ smoke test Selenium Python **5/5 PASS**.
+- **Kết quả thực tế ngày 08/09/2026:** Selenium JS **22/22 Test Cases PASS (100%)**; bộ smoke test Selenium Python **5/5 PASS**.
 
 ---
 
@@ -356,12 +356,12 @@ Hệ thống tích hợp công cụ kiểm định chất lượng hiệu năng 
 ./scripts/run-yc8.ps1 -JMeterBin "tools\apache-jmeter-5.6.3\bin\jmeter.bat"
 ```
 
-#### Kết quả Đo lường Tham chiếu (chạy ngày 07/09/2026):
+#### Kết quả Đo lường Tham chiếu (chạy ngày 08/09/2026):
 - **Tổng số mẫu:** **1.550/1.550 PASS**
-- **Average Response Time:** **8.39 ms** (Vượt xa ngưỡng yêu cầu $\le 1000$ ms)
-- **95th Percentile (P95):** **33 ms** (Vượt xa ngưỡng yêu cầu $\le 2000$ ms)
+- **Average Response Time:** **7.62 ms** (Vượt xa ngưỡng yêu cầu $\le 1000$ ms)
+- **95th Percentile (P95):** **27 ms** (Vượt xa ngưỡng yêu cầu $\le 2000$ ms)
 - **Error Rate:** **0.00%** (Hoàn hảo, không có bất kỳ request lỗi nào)
-- **Throughput:** **78.39 requests/giây**
+- **Throughput:** **78.59 requests/giây**
 - **Đánh giá chung:** **PASSED ALL PERFORMANCE GATES** 🟢
 
 #### Mở JMeter ở chế độ Giao diện (GUI Mode để quan sát trực quan):
