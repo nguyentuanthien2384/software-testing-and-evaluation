@@ -15,6 +15,7 @@ const customJestConfig = {
     'src/lib/app-data-validation.ts',
     'src/lib/class-generation.ts',
     'src/lib/coefficient-copy.ts',
+    'src/lib/numeric-input.ts',
     'src/lib/report-export.ts',
     'src/lib/state-version.ts',
     'src/lib/repository.ts'

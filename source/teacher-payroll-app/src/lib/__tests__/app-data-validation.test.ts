@@ -1,9 +1,70 @@
 import { getSemesterStatus, isValidAcademicYear, validateAppData, validateEntityMutation } from '../app-data-validation';
 import { initialData } from '../initial-data';
+import type { AppData } from '../types';
 
-function copyData() {
+function copyData(): AppData {
   return structuredClone(initialData);
 }
+
+type DataMutation = (data: AppData) => void;
+
+const positiveInvariantCases: Array<[string, DataMutation, string]> = [
+  [
+    'hệ số bằng cấp gốc bằng 0',
+    (data) => { data.degrees[0].coefficient = 0; },
+    'Hệ số bằng cấp DEG-TS phải lớn hơn 0.'
+  ],
+  [
+    'số tín chỉ bằng 0',
+    (data) => { data.subjects[0].credits = 0; },
+    'Số tín chỉ của SUB-CSDL phải là số nguyên lớn hơn 0.'
+  ],
+  [
+    'tổng số tiết học phần bằng 0',
+    (data) => { data.subjects[0].totalHours = 0; },
+    'Số tiết của SUB-CSDL phải là số nguyên lớn hơn 0.'
+  ],
+  [
+    'hệ số học phần bằng 0',
+    (data) => { data.subjects[0].coefficient = 0; },
+    'Hệ số học phần SUB-CSDL phải lớn hơn 0.'
+  ],
+  [
+    'sĩ số lớp bằng 0',
+    (data) => { data.classes[0].studentCount = 0; },
+    'Sĩ số lớp CLS-CSDL-01 phải là số nguyên lớn hơn 0.'
+  ],
+  [
+    'số tiết phân công bằng 0',
+    (data) => { data.assignments[0].teachingHours = 0; },
+    'Số tiết của phân công ASG-001 phải lớn hơn 0.'
+  ],
+  [
+    'định mức bằng 0',
+    (data) => { data.paymentRates[0].amount = 0; },
+    'Định mức RATE-2024 phải lớn hơn 0.'
+  ],
+  [
+    'hệ số giáo viên theo năm bằng 0',
+    (data) => { data.degreeCoefficients[0].coefficient = 0; },
+    'Hệ số giáo viên DCOEF-2024-TS phải lớn hơn 0.'
+  ],
+  [
+    'sĩ số bắt đầu của khoảng bằng 0',
+    (data) => { data.classCoefficients[0].minStudents = 0; },
+    'Sĩ số từ của CCOEF-2024-01 phải là số nguyên lớn hơn 0.'
+  ],
+  [
+    'sĩ số kết thúc của khoảng bằng 0',
+    (data) => { data.classCoefficients[0].maxStudents = 0; },
+    'Sĩ số đến của CCOEF-2024-01 phải lớn hơn hoặc bằng sĩ số từ.'
+  ],
+  [
+    'hệ số lớp bằng 0',
+    (data) => { data.classCoefficients[0].coefficient = 0; },
+    'Hệ số lớp CCOEF-2024-01 phải lớn hơn 0.'
+  ]
+];
 
 describe('validateAppData', () => {
   test('chấp nhận dữ liệu mẫu hợp lệ', () => {
@@ -16,6 +77,31 @@ describe('validateAppData', () => {
     const result = validateAppData(data);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors.join(' ')).toContain('Mã học phần');
+  });
+
+  test('từ chối mã định danh trùng không phân biệt hoa thường', () => {
+    const data = copyData();
+    data.degrees.push({
+      ...data.degrees[0],
+      id: data.degrees[0].id.toLowerCase(),
+      name: 'Bằng cấp khác',
+      shortName: 'KHAC'
+    });
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContain('Mã deg-ts bị trùng trong degrees.');
+  });
+
+  test('từ chối trường văn bản vượt giới hạn payload', () => {
+    const data = copyData();
+    data.departments[0].description = 'x'.repeat(5001);
+
+    const result = validateAppData(data);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContain('departments[0].description vượt quá 5000 ký tự.');
   });
 
   test('từ chối ngày kỳ học đảo ngược và năm học sai định dạng', () => {
@@ -37,34 +123,35 @@ describe('validateAppData', () => {
     if (!result.ok) expect(result.errors.join(' ')).toContain('chồng lấn');
   });
 
-  test('từ chối sĩ số lớp bằng 0', () => {
+  test.each(positiveInvariantCases)('từ chối %s', (_case, mutate, expectedError) => {
     const data = copyData();
-    data.classes[0] = { ...data.classes[0], studentCount: 0 };
+    mutate(data);
 
     const result = validateAppData(data);
 
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.errors).toContain('Sĩ số lớp CLS-CSDL-01 phải là số nguyên lớn hơn 0.');
+    if (!result.ok) expect(result.errors).toContain(expectedError);
   });
 
-  test('từ chối sĩ số bắt đầu và hệ số lớp không dương', () => {
+  test.each([
+    ['bước thấp nhất', 0.1],
+    ['bội số thập phân thông thường', 0.3],
+    ['sai số biểu diễn dấu phẩy động', 0.30000000000000004],
+    ['sai số nằm trong tolerance', 0.9 + 5e-11]
+  ])('chấp nhận hệ số lớp đúng bước 0.1: %s', (_case, coefficient) => {
     const data = copyData();
-    data.classCoefficients[0] = { ...data.classCoefficients[0], minStudents: 0, coefficient: 0 };
+    data.classCoefficients[0].coefficient = coefficient;
 
-    const result = validateAppData(data);
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors).toEqual(expect.arrayContaining([
-        'Sĩ số từ của CCOEF-2024-01 phải là số nguyên lớn hơn 0.',
-        'Hệ số lớp CCOEF-2024-01 phải lớn hơn 0.'
-      ]));
-    }
+    expect(validateAppData(data)).toEqual({ ok: true, data });
   });
 
-  test('từ chối hệ số lớp không theo bước 0.1 để tránh hiển thị sai giá trị tính', () => {
+  test.each([
+    ['nằm giữa hai bước', 0.95],
+    ['có hai chữ số thập phân không thẳng bước', 1.25],
+    ['sai số vượt tolerance', 0.9 + 2e-10]
+  ])('từ chối hệ số lớp không đúng bước 0.1: %s', (_case, coefficient) => {
     const data = copyData();
-    data.classCoefficients[0] = { ...data.classCoefficients[0], coefficient: 0.95 };
+    data.classCoefficients[0].coefficient = coefficient;
 
     const result = validateAppData(data);
 
@@ -72,15 +159,12 @@ describe('validateAppData', () => {
     if (!result.ok) expect(result.errors).toContain('Hệ số lớp CCOEF-2024-01 phải theo bước 0.1.');
   });
 
-  test('từ chối phân công trùng lớp và số tiết không dương', () => {
+  test('từ chối phân công trùng lớp', () => {
     const data = copyData();
-    data.assignments.push({ ...data.assignments[0], id: 'ASG-NEW', teachingHours: 0 });
+    data.assignments.push({ ...data.assignments[0], id: 'ASG-NEW' });
     const result = validateAppData(data);
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors.join(' ')).toContain('phải lớn hơn 0');
-      expect(result.errors.join(' ')).toContain('đã được phân công');
-    }
+    if (!result.ok) expect(result.errors).toContain('Lớp cls-csdl-01 đã được phân công cho giáo viên khác.');
   });
 
   test('từ chối dữ liệu khi phân công không có định mức của năm học', () => {
@@ -153,6 +237,42 @@ describe('validateAppData', () => {
   test('không cho sửa khoá chính', () => {
     const row = { ...copyData().degrees[0], id: 'DEG-CHANGED' };
     expect(validateEntityMutation('degrees', row, copyData(), 'DEG-TS')).toContain('Không được thay đổi mã định danh khi chỉnh sửa.');
+  });
+
+  test('không cho chuyển giáo viên vào khoa đã ngừng hoạt động', () => {
+    const data = copyData();
+    data.departments[0].status = 'Ngừng hoạt động';
+
+    expect(validateEntityMutation('teachers', data.teachers[0], data, data.teachers[0].id)).toEqual([
+      'Không thể xếp giáo viên vào khoa đã ngừng hoạt động.'
+    ]);
+  });
+
+  test.each([
+    [
+      'lớp học phần',
+      'classes',
+      (data: AppData) => data.classes[0],
+      'Không thể thêm hoặc sửa lớp thuộc kỳ học đã khóa.'
+    ],
+    [
+      'phân công',
+      'assignments',
+      (data: AppData) => data.assignments[0],
+      'Không thể thay đổi phân công của kỳ học đã khóa.'
+    ]
+  ] as const)('không cho sửa %s thuộc kỳ học đã khóa', (_label, entityKey, rowFrom, expectedError) => {
+    const data = copyData();
+    const row = rowFrom(data);
+
+    expect(validateEntityMutation(entityKey, row, data, row.id)).toEqual([expectedError]);
+  });
+
+  test('chấp nhận chỉnh sửa hợp lệ và thay đúng bản ghi trong snapshot kiểm tra', () => {
+    const data = copyData();
+    const changed = { ...data.paymentRates[0], amount: 150000 };
+
+    expect(validateEntityMutation('paymentRates', changed, data, changed.id)).toEqual([]);
   });
 });
 

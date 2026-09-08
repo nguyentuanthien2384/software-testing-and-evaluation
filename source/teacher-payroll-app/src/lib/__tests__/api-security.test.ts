@@ -107,14 +107,33 @@ describe('bảo vệ API', () => {
   });
 
   test.each([
-    ['số 0', { hours: 0 }],
-    ['số âm', { classCoef: -0.1 }],
-    ['chuỗi hex', { rate: '0x10' }],
-    ['ký pháp mũ', { degreeCoef: '1e2' }],
-    ['boolean', { subjectCoef: true }],
-    ['null', { classCoef: null }],
-    ['kết quả tràn số', { rate: Number.MAX_VALUE, degreeCoef: 2 }]
-  ])('API tính lương từ chối %s', async (_case, changed) => {
+    ['số 0 ở số tiết', { hours: 0 }, 'Số tiết phải là số lớn hơn 0.'],
+    ['số âm ở hệ số lớp', { classCoef: -0.1 }, 'Hệ số lớp phải là số lớn hơn 0.'],
+    ['chuỗi hex ở định mức', { rate: '0x10' }, 'Định mức phải là số lớn hơn 0.'],
+    ['ký pháp mũ ở hệ số bằng cấp', { degreeCoef: '1e2' }, 'Hệ số bằng cấp phải là số lớn hơn 0.'],
+    ['boolean ở hệ số học phần', { subjectCoef: true }, 'Hệ số học phần phải là số lớn hơn 0.'],
+    ['null ở hệ số lớp', { classCoef: null }, 'Hệ số lớp phải là số lớn hơn 0.'],
+    [
+      'tiết quy đổi tràn số',
+      { hours: Number.MAX_VALUE, subjectCoef: 2, classCoef: 1, rate: 1, degreeCoef: 1 },
+      'Tiết quy đổi phải là số lớn hơn 0.'
+    ],
+    [
+      'tiết quy đổi underflow',
+      { hours: Number.MIN_VALUE, subjectCoef: 0.1, classCoef: 1, rate: 1, degreeCoef: 1 },
+      'Tiết quy đổi phải là số lớn hơn 0.'
+    ],
+    [
+      'thành tiền tràn số',
+      { hours: 1, subjectCoef: 1, classCoef: 1, rate: Number.MAX_VALUE, degreeCoef: 2 },
+      'Thành tiền phải là số lớn hơn 0.'
+    ],
+    [
+      'thành tiền làm tròn về 0',
+      { hours: 1, subjectCoef: 1, classCoef: 1, rate: 0.49, degreeCoef: 1 },
+      'Thành tiền phải là số lớn hơn 0.'
+    ]
+  ] as Array<[string, Record<string, unknown>, string]>)('API tính lương từ chối %s với đúng thông báo', async (_case, changed, expectedError) => {
     const response = await calculatePayroll(payrollRequest({
       hours: 45,
       subjectCoef: 1.2,
@@ -125,5 +144,6 @@ describe('bảo vệ API', () => {
     }));
 
     expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: expectedError });
   });
 });

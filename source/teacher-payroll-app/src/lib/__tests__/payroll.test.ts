@@ -1,6 +1,8 @@
 import { initialData } from '../initial-data';
+import type { PayrollInput, PayrollResult } from '../types';
 import {
   calculateAllPayrollLines,
+  calculateAllPayrollLinesSafely,
   calculatePayrollLine,
   calculateTeachingPay,
   findClassCoefficient,
@@ -14,44 +16,91 @@ import {
   validateTeacher
 } from '../payroll';
 
+const validPayrollInput: PayrollInput = {
+  hours: 45,
+  subjectCoef: 1.2,
+  classCoef: 0.9,
+  rate: 143000,
+  degreeCoef: 2
+};
+
+const invalidPayrollInputs: Array<[string, string, PayrollInput, string]> = [
+  ['số tiết', 'bằng 0', { ...validPayrollInput, hours: 0 }, 'Số tiết phải là số lớn hơn 0.'],
+  ['số tiết', 'âm', { ...validPayrollInput, hours: -1 }, 'Số tiết phải là số lớn hơn 0.'],
+  ['số tiết', 'NaN', { ...validPayrollInput, hours: Number.NaN }, 'Số tiết phải là số lớn hơn 0.'],
+  ['số tiết', '+Infinity', { ...validPayrollInput, hours: Number.POSITIVE_INFINITY }, 'Số tiết phải là số lớn hơn 0.'],
+  ['số tiết', '-Infinity', { ...validPayrollInput, hours: Number.NEGATIVE_INFINITY }, 'Số tiết phải là số lớn hơn 0.'],
+  ['hệ số học phần', 'bằng 0', { ...validPayrollInput, subjectCoef: 0 }, 'Hệ số học phần phải là số lớn hơn 0.'],
+  ['hệ số học phần', 'âm', { ...validPayrollInput, subjectCoef: -0.1 }, 'Hệ số học phần phải là số lớn hơn 0.'],
+  ['hệ số học phần', 'NaN', { ...validPayrollInput, subjectCoef: Number.NaN }, 'Hệ số học phần phải là số lớn hơn 0.'],
+  ['hệ số học phần', '+Infinity', { ...validPayrollInput, subjectCoef: Number.POSITIVE_INFINITY }, 'Hệ số học phần phải là số lớn hơn 0.'],
+  ['hệ số học phần', '-Infinity', { ...validPayrollInput, subjectCoef: Number.NEGATIVE_INFINITY }, 'Hệ số học phần phải là số lớn hơn 0.'],
+  ['hệ số lớp', 'bằng 0', { ...validPayrollInput, classCoef: 0 }, 'Hệ số lớp phải là số lớn hơn 0.'],
+  ['hệ số lớp', 'âm', { ...validPayrollInput, classCoef: -0.1 }, 'Hệ số lớp phải là số lớn hơn 0.'],
+  ['hệ số lớp', 'NaN', { ...validPayrollInput, classCoef: Number.NaN }, 'Hệ số lớp phải là số lớn hơn 0.'],
+  ['hệ số lớp', '+Infinity', { ...validPayrollInput, classCoef: Number.POSITIVE_INFINITY }, 'Hệ số lớp phải là số lớn hơn 0.'],
+  ['hệ số lớp', '-Infinity', { ...validPayrollInput, classCoef: Number.NEGATIVE_INFINITY }, 'Hệ số lớp phải là số lớn hơn 0.'],
+  ['định mức', 'bằng 0', { ...validPayrollInput, rate: 0 }, 'Định mức phải là số lớn hơn 0.'],
+  ['định mức', 'âm', { ...validPayrollInput, rate: -1 }, 'Định mức phải là số lớn hơn 0.'],
+  ['định mức', 'NaN', { ...validPayrollInput, rate: Number.NaN }, 'Định mức phải là số lớn hơn 0.'],
+  ['định mức', '+Infinity', { ...validPayrollInput, rate: Number.POSITIVE_INFINITY }, 'Định mức phải là số lớn hơn 0.'],
+  ['định mức', '-Infinity', { ...validPayrollInput, rate: Number.NEGATIVE_INFINITY }, 'Định mức phải là số lớn hơn 0.'],
+  ['hệ số bằng cấp', 'bằng 0', { ...validPayrollInput, degreeCoef: 0 }, 'Hệ số bằng cấp phải là số lớn hơn 0.'],
+  ['hệ số bằng cấp', 'âm', { ...validPayrollInput, degreeCoef: -0.1 }, 'Hệ số bằng cấp phải là số lớn hơn 0.'],
+  ['hệ số bằng cấp', 'NaN', { ...validPayrollInput, degreeCoef: Number.NaN }, 'Hệ số bằng cấp phải là số lớn hơn 0.'],
+  ['hệ số bằng cấp', '+Infinity', { ...validPayrollInput, degreeCoef: Number.POSITIVE_INFINITY }, 'Hệ số bằng cấp phải là số lớn hơn 0.'],
+  ['hệ số bằng cấp', '-Infinity', { ...validPayrollInput, degreeCoef: Number.NEGATIVE_INFINITY }, 'Hệ số bằng cấp phải là số lớn hơn 0.']
+];
+
 describe('calculateTeachingPay', () => {
-  test('tính tiền dạy theo công thức chuẩn', () => {
-    expect(calculateTeachingPay({ hours: 45, subjectCoef: 1, classCoef: 0.9, rate: 143000, degreeCoef: 2 })).toEqual({
-      convertedHours: 40.5,
-      amount: 11583000
-    });
+  test.each([
+    [
+      'hệ số lớp nhỏ hơn 1',
+      { hours: 45, subjectCoef: 1, classCoef: 0.9, rate: 143000, degreeCoef: 2 },
+      { convertedHours: 40.5, amount: 11583000 }
+    ],
+    [
+      'hệ số học phần và hệ số lớp đều lớn hơn 1',
+      { hours: 60, subjectCoef: 1.2, classCoef: 1.1, rate: 143000, degreeCoef: 1.5 },
+      { convertedHours: 79.2, amount: 16988400 }
+    ],
+    [
+      'tiết quy đổi cần làm tròn trước khi tính thành tiền',
+      { hours: 10.075, subjectCoef: 1, classCoef: 1, rate: 100, degreeCoef: 1 },
+      { convertedHours: 10.08, amount: 1008 }
+    ]
+  ] as Array<[string, PayrollInput, PayrollResult]>)('nhân đúng công thức với %s', (_case, input, expected) => {
+    expect(calculateTeachingPay(input)).toEqual(expected);
   });
 
-  test('nhân hệ số lớp vào hệ số học phần', () => {
-    expect(calculateTeachingPay({ hours: 60, subjectCoef: 1.2, classCoef: 1.1, rate: 143000, degreeCoef: 1.5 })).toEqual({
-      convertedHours: 79.2,
-      amount: 16988400
-    });
-  });
-
-  test('từ chối kết quả thành tiền bị tràn số', () => {
-    expect(() => calculateTeachingPay({
-      hours: 1,
-      subjectCoef: 1,
-      classCoef: 1,
-      rate: Number.MAX_VALUE,
-      degreeCoef: 2
-    })).toThrow('Thành tiền phải là số lớn hơn 0');
+  test.each(invalidPayrollInputs)('từ chối %s %s', (_field, _invalidKind, input, expectedError) => {
+    expect(() => calculateTeachingPay(input)).toThrow(expectedError);
   });
 
   test.each([
-    ['số tiết bằng 0', { hours: 0, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
-    ['số tiết âm', { hours: -1, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Số tiết'],
-    ['hệ số học phần bằng 0', { hours: 45, subjectCoef: 0, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Hệ số học phần'],
-    ['hệ số học phần âm', { hours: 45, subjectCoef: -0.1, classCoef: 1, rate: 100000, degreeCoef: 1 }, 'Hệ số học phần'],
-    ['hệ số lớp bằng 0', { hours: 45, subjectCoef: 1, classCoef: 0, rate: 100000, degreeCoef: 1 }, 'Hệ số lớp'],
-    ['hệ số lớp âm', { hours: 45, subjectCoef: 1, classCoef: -0.1, rate: 100000, degreeCoef: 1 }, 'Hệ số lớp'],
-    ['định mức bằng 0', { hours: 45, subjectCoef: 1, classCoef: 1, rate: 0, degreeCoef: 1 }, 'Định mức'],
-    ['định mức âm', { hours: 45, subjectCoef: 1, classCoef: 1, rate: -1, degreeCoef: 1 }, 'Định mức'],
-    ['hệ số bằng cấp bằng 0', { hours: 45, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: 0 }, 'Hệ số bằng cấp'],
-    ['hệ số bằng cấp âm', { hours: 45, subjectCoef: 1, classCoef: 1, rate: 100000, degreeCoef: -0.1 }, 'Hệ số bằng cấp']
-  ])('không cho %s', (_case, input, expectedError) => {
-    expect(() => calculateTeachingPay(input)).toThrow(expectedError);
+    [
+      'tràn số khi nhân',
+      { hours: Number.MAX_VALUE, subjectCoef: 2, classCoef: 1, rate: 1, degreeCoef: 1 }
+    ],
+    [
+      'underflow khi nhân',
+      { hours: Number.MIN_VALUE, subjectCoef: 0.1, classCoef: 1, rate: 1, degreeCoef: 1 }
+    ]
+  ] as Array<[string, PayrollInput]>)('từ chối tiết quy đổi %s', (_case, input) => {
+    expect(() => calculateTeachingPay(input)).toThrow('Tiết quy đổi phải là số lớn hơn 0.');
+  });
+
+  test.each([
+    [
+      'tràn số',
+      { hours: 1, subjectCoef: 1, classCoef: 1, rate: Number.MAX_VALUE, degreeCoef: 2 }
+    ],
+    [
+      'bị làm tròn về 0',
+      { hours: 1, subjectCoef: 1, classCoef: 1, rate: 0.49, degreeCoef: 1 }
+    ]
+  ] as Array<[string, PayrollInput]>)('từ chối thành tiền %s', (_case, input) => {
+    expect(() => calculateTeachingPay(input)).toThrow('Thành tiền phải là số lớn hơn 0.');
   });
 
   test('làm tròn chính xác tại ranh giới số thập phân', () => {
@@ -115,24 +164,55 @@ describe('quản lý giáo viên', () => {
 });
 
 describe('báo cáo tiền dạy', () => {
-  test('tính được một dòng payroll từ phân công', () => {
+  test('tính chính xác toàn bộ dữ liệu của một dòng payroll', () => {
     const line = calculatePayrollLine(initialData, initialData.assignments[0]);
-    expect(line.teacherName).toBe('Nguyễn Văn An');
-    expect(line.amount).toBeGreaterThan(0);
+    expect(line).toEqual({
+      assignmentId: 'ASG-001',
+      teacherId: 'GV0001',
+      teacherName: 'Nguyễn Văn An',
+      departmentName: 'Khoa Công nghệ thông tin',
+      degreeName: 'TS',
+      semesterName: 'Học kỳ 1 2024-2025',
+      year: '2024-2025',
+      classCode: 'CSDL101.01',
+      subjectName: 'Cơ sở dữ liệu',
+      teachingHours: 45,
+      subjectCoefficient: 1,
+      classCoefficient: 1,
+      paymentRate: 143000,
+      degreeCoefficient: 2,
+      convertedHours: 45,
+      amount: 12870000
+    });
   });
 
-  test('tính toàn bộ dòng payroll', () => {
-    expect(calculateAllPayrollLines(initialData)).toHaveLength(initialData.assignments.length);
+  test('tính đúng số dòng và tổng tiền của toàn bộ dữ liệu mẫu', () => {
+    const lines = calculateAllPayrollLines(initialData);
+    expect(lines).toHaveLength(initialData.assignments.length);
+    expect(sumAmount(lines)).toBe(78701400);
   });
 
-  test('tổng tiền lớn hơn 0', () => {
-    expect(sumAmount(calculateAllPayrollLines(initialData))).toBeGreaterThan(0);
-  });
-
-  test('group theo khoa', () => {
+  test('gom nhóm theo khoa với số dòng và tổng tiền chính xác', () => {
     const grouped = groupAmountBy(calculateAllPayrollLines(initialData), 'departmentName');
-    expect(grouped.length).toBeGreaterThan(0);
-    expect(grouped[0].amount).toBeGreaterThan(0);
+    expect(grouped).toEqual([
+      { name: 'Khoa Công nghệ thông tin', amount: 38931750, count: 3 },
+      { name: 'Khoa Điện tử - Viễn thông', amount: 29745900, count: 2 },
+      { name: 'Khoa Xây dựng', amount: 10023750, count: 1 }
+    ]);
+  });
+
+  test('giữ các dòng hợp lệ và báo đúng mã phân công khi một dòng bị lỗi', () => {
+    const data = structuredClone(initialData);
+    data.assignments.push({
+      ...data.assignments[0],
+      id: 'ASG-BROKEN',
+      teacherId: 'GV-KHONG-TON-TAI'
+    });
+
+    expect(calculateAllPayrollLinesSafely(data)).toEqual({
+      lines: calculateAllPayrollLines(initialData),
+      errors: ['ASG-BROKEN: Không tìm thấy giáo viên.']
+    });
   });
 });
 
@@ -147,10 +227,6 @@ import {
 } from '../payroll';
 
 describe('coverage bổ sung cho business rule', () => {
-  test('bắt lỗi hệ số lớp không phải số', () => {
-    expect(() => calculateTeachingPay({ hours: 45, subjectCoef: 1, classCoef: Number.NaN, rate: 143000, degreeCoef: 2 })).toThrow('Hệ số lớp');
-  });
-
   test('fallback hệ số bằng cấp mặc định khi chưa có cấu hình năm', () => {
     expect(findDegreeCoefficient(initialData, 'DEG-TS', '2030-2031')).toBe(2);
   });
