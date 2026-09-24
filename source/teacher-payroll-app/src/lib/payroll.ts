@@ -59,6 +59,9 @@ export function findDegreeCoefficient(data: AppData, degreeId: string, year: str
 
   const degree = data.degrees.find((item) => item.id === degreeId);
   if (!degree) throw new Error('Không tìm thấy bằng cấp của giáo viên.');
+  if (data.degreeCoefficients.some((item) => item.year === year)) {
+    throw new Error(`Chưa thiết lập hệ số bằng cấp ${degree.shortName} cho năm học ${year}.`);
+  }
   return degree.coefficient;
 }
 
@@ -106,8 +109,9 @@ export function validateTeacher(teacher: Teacher, now = new Date()): string[] {
 
 export function generateNextTeacherCode(teachers: Pick<Teacher, 'id'>[]): string {
   const max = teachers.reduce((currentMax, item) => {
-    const number = Number(item.id.replace(/^GV/, ''));
-    return Number.isFinite(number) ? Math.max(currentMax, number) : currentMax;
+    const match = /^GV(\d+)$/.exec(item.id);
+    const number = match ? Number(match[1]) : Number.NaN;
+    return Number.isSafeInteger(number) ? Math.max(currentMax, number) : currentMax;
   }, 0);
   return `GV${String(max + 1).padStart(4, '0')}`;
 }

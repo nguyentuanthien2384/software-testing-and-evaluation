@@ -71,6 +71,33 @@ describe('validateAppData', () => {
     expect(validateAppData(copyData())).toEqual({ ok: true, data: initialData });
   });
 
+  test('từ chối thuộc tính ngoài snapshot để phiên bản lưu và đọc lại luôn khớp nhau', () => {
+    const data = { ...copyData(), unexpected: 'not persisted' };
+    const result = validateAppData(data);
+    expect(result).toEqual({ ok: false, errors: ['Trường unexpected không được hỗ trợ.'] });
+  });
+
+  test('không ghi snapshot rỗng rồi bất ngờ hiển thị lại dữ liệu mẫu', () => {
+    const empty = Object.fromEntries(Object.keys(initialData).map((key) => [key, []]));
+    expect(validateAppData(empty)).toEqual({
+      ok: false,
+      errors: ['Không thể lưu snapshot trống vì hệ thống sẽ hiển thị lại dữ liệu mẫu.']
+    });
+  });
+
+  test.each([
+    ['thuộc tính ngoài mô hình', (data: AppData) => { (data.degrees[0] as unknown as Record<string, unknown>).extra = 'x'; }, 'degrees[0].extra không được hỗ trợ.'],
+    ['thiếu ghi chú lớp', (data: AppData) => { delete (data.classes[0] as Partial<AppData['classes'][number]>).note; }, 'classes[0].note phải là chuỗi.'],
+    ['kiểu mô tả khoa sai', (data: AppData) => { (data.departments[0] as unknown as Record<string, unknown>).description = null; }, 'departments[0].description phải là chuỗi.'],
+    ['số ở dạng chuỗi', (data: AppData) => { (data.paymentRates[0] as unknown as Record<string, unknown>).amount = '143000'; }, 'paymentRates[0].amount phải là số hữu hạn.']
+  ] as Array<[string, DataMutation, string]>)('từ chối %s trước khi ghi CSDL', (_case, mutate, expectedError) => {
+    const data = copyData();
+    mutate(data);
+    const result = validateAppData(data);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContain(expectedError);
+  });
+
   test('từ chối mã học phần trùng không phân biệt hoa thường', () => {
     const data = copyData();
     data.subjects.push({ ...data.subjects[0], id: 'SUB-NEW', code: data.subjects[0].code.toLowerCase() });
@@ -266,6 +293,31 @@ describe('validateAppData', () => {
     const row = rowFrom(data);
 
     expect(validateEntityMutation(entityKey, row, data, row.id)).toEqual([expectedError]);
+  });
+
+  test('không cho chuyển lớp vốn thuộc kỳ đã khóa sang kỳ mở', () => {
+    const data = copyData();
+    const original = data.classes[0];
+    const moved = { ...original, semesterId: 'SEM-2025-1' };
+    expect(validateEntityMutation('classes', moved, data, original.id)).toEqual([
+      'Không thể thêm hoặc sửa lớp thuộc kỳ học đã khóa.'
+    ]);
+  });
+
+  test('không cho chuyển phân công vốn thuộc kỳ đã khóa sang lớp ở kỳ mở', () => {
+    const data = copyData();
+    const original = data.assignments[0];
+    const moved = { ...original, classId: 'CLS-DTU-01' };
+    expect(validateEntityMutation('assignments', moved, data, original.id)).toEqual([
+      'Không thể thay đổi phân công của kỳ học đã khóa.'
+    ]);
+  });
+
+  test('báo lỗi khi bản ghi cần sửa đã bị xóa', () => {
+    const data = copyData();
+    expect(validateEntityMutation('degrees', { ...data.degrees[0], id: 'DEG-MISSING' }, data, 'DEG-MISSING')).toEqual([
+      'Bản ghi cần chỉnh sửa không còn tồn tại.'
+    ]);
   });
 
   test('chấp nhận chỉnh sửa hợp lệ và thay đúng bản ghi trong snapshot kiểm tra', () => {

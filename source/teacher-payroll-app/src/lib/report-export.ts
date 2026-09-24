@@ -3,7 +3,9 @@ import { PayrollLine } from './types';
 function safeCsvCell(value: string | number): string {
   let text = String(value);
   // Ngăn Excel/LibreOffice diễn giải nội dung do người dùng nhập thành công thức.
-  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  // Spreadsheet programs may ignore leading spaces or control characters
+  // when detecting formulas, so quote the value before that prefix as well.
+  if (/^[\s\uFEFF\u200B]*[=+\-@]/u.test(text)) text = `'${text}`;
   return `"${text.replaceAll('"', '""')}"`;
 }
 

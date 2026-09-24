@@ -9,7 +9,7 @@
 [![React](https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-SQLite-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
-[![Jest](https://img.shields.io/badge/Jest-Unit%20Test%20100%25-C21325?style=flat-square&logo=jest)](https://jestjs.io/)
+[![Jest](https://img.shields.io/badge/Jest-Unit%20Tests-C21325?style=flat-square&logo=jest)](https://jestjs.io/)
 [![Selenium](https://img.shields.io/badge/Selenium%20WebDriver-YC7%20PASS%20(22%2F22)-43B02A?style=flat-square&logo=selenium)](https://www.selenium.dev/)
 [![Apache JMeter](https://img.shields.io/badge/JMeter-YC8%20Gate%20PASSED-D22128?style=flat-square&logo=apachejmeter)](https://jmeter.apache.org/)
 [![CI/CD](https://img.shields.io/badge/GitHub%20Actions-CI%20Ready-2088FF?style=flat-square&logo=github-actions)](https://github.com/)
@@ -48,7 +48,7 @@ Dự án **Phần mềm Tính tiền dạy cho Giáo viên** là một hệ th�
 - Tự động hóa quá trình tính toán tiền thù lao giảng dạy một cách chính xác, minh bạch, bảo vệ dữ liệu trước các trường hợp thiếu cấu hình.
 - Cung cấp các báo cáo tổng hợp và chi tiết, hỗ trợ trích xuất dữ liệu ra file CSV hoặc in ấn/lưu trữ định dạng PDF theo chuẩn khổ giấy A4.
 
-Dự án đáp ứng đầy đủ chuỗi yêu cầu kiểm định từ **YC1 đến YC9** bao gồm tài liệu đặc tả SRS, Test Plan SQA, Ma trận truy vết, Unit Test Jest (đạt 100% core logic), UI Automation bằng Selenium WebDriver và Performance Test bằng Apache JMeter.
+Dự án đáp ứng chuỗi yêu cầu kiểm định từ **YC1 đến YC9** bao gồm tài liệu đặc tả SRS, Test Plan SQA, Ma trận truy vết, Unit Test Jest, UI Automation bằng Selenium WebDriver và Performance Test bằng Apache JMeter.
 
 ---
 
@@ -194,7 +194,7 @@ graph TD
     end
 
     subgraph QualityAssurance["Testing & QA Ecosystem"]
-        Jest["Jest Unit Tests (100% Core Coverage)"] -.-> Business
+        Jest["Jest Unit Tests (Core Coverage)"] -.-> Business
         Selenium["Selenium WebDriver + Mocha (YC7 UI E2E)"] -.-> Client
         JMeter["Apache JMeter 5.6.3 (YC8 Performance Gate)"] -.-> API
     end
@@ -208,7 +208,7 @@ graph TD
 | **Giao diện & Ngôn ngữ** | React, TypeScript, Vanilla CSS | 18, 5.x | Hệ thống kiểu dữ liệu tĩnh an toàn, CSS biến tùy biến linh hoạt |
 | **Cơ sở Dữ liệu** | SQLite + Prisma ORM | 5.x | CSDL quan hệ chuẩn hóa, dễ dàng triển khai cục bộ và kiểm thử |
 | **Bảo mật & Phiên** | HttpOnly Cookie + HMAC-SHA256 | Native Crypto | Chống XSS/CSRF, bảo vệ thông tin phiên đăng nhập |
-| **Unit Testing** | Jest + ts-jest + Istanbul | 29.x | Kiểm thử đơn vị logic nghiệp vụ, đo lường độ bao phủ 100% |
+| **Unit Testing** | Jest + ts-jest + Istanbul | 29.x | Kiểm thử đơn vị logic nghiệp vụ và đo lường độ bao phủ |
 | **UI Automation (YC7)** | Selenium WebDriver + Mocha | 4.27+, 11.x | Tự động hóa kiểm thử giao diện theo mô hình Page Object Model |
 | **Performance (YC8)** | Apache JMeter + Node.js Gate | 5.6.3 | Kiểm thử tải, thời gian phản hồi, thông lượng và tỷ lệ lỗi |
 
@@ -284,6 +284,8 @@ npm run dev
 
 Truy cập ứng dụng tại: `http://localhost:3000` (hoặc `http://127.0.0.1:3000`).
 
+Khi chạy bản production bằng `npm run start`, cần đặt `AUTH_SESSION_SECRET` riêng dài ít nhất 32 ký tự. Giá trị mẫu trong `.env.example` chỉ dành cho cấu hình ban đầu và sẽ bị từ chối khi đăng nhập trên bản production.
+
 ### Thông tin Tài khoản Đăng nhập Mặc định
 
 | Tài khoản | Mật khẩu | Vai trò (Role) | Phạm vi Quyền hạn |
@@ -307,7 +309,9 @@ npm run test:unit
 npm run coverage
 ```
 
-> **Kết quả kiểm thử:** Đạt **100% Statement, Branch, Function và Line Coverage** đối với toàn bộ các module nghiệp vụ lõi (`payroll.ts`, `app-data-validation.ts`, `coefficient-copy.ts`, `class-generation.ts`).
+> **Độ bao phủ:** Chạy `npm run coverage` để xem tỷ lệ hiện tại của các module nghiệp vụ lõi. Báo cáo này được tính lại sau mỗi lần chạy thay vì sử dụng một tỷ lệ cố định trong tài liệu.
+
+Bộ kiểm thử đặt ngưỡng tối thiểu cho các module nghiệp vụ và hook: 90% câu lệnh, 85% nhánh, 95% hàm và 95% dòng. Lệnh `npm run coverage` sẽ báo lỗi khi tỷ lệ xuống dưới ngưỡng.
 
 ---
 
@@ -464,7 +468,7 @@ Tất cả các bằng chứng kiểm thử và tài liệu đặc tả đều �
 | **YC3 - Giao diện UI/UX** | Thiết kế AppShell, Thư viện ảnh chụp UI | [`docs/images/`](docs/images/) | Đầy đủ |
 | **YC4 - Ma trận Truy vết** | Traceability Matrix & Checklist | [`docs/05_Project_Artifacts_Checklists_Traceability.xlsx`](docs/05_Project_Artifacts_Checklists_Traceability.xlsx) | Đầy đủ |
 | **YC5 - SQA Test Plan** | Kế hoạch đảm bảo chất lượng phần mềm | [`docs/02_SQA_Test_Plan.docx`](docs/02_SQA_Test_Plan.docx) | Đầy đủ |
-| **YC6 - Kiểm thử Đơn vị** | Báo cáo kiểm thử Jest & Độ bao phủ 100% | [`evidence/coverage/`](evidence/coverage/) | Đầy đủ |
+| **YC6 - Kiểm thử Đơn vị** | Báo cáo kiểm thử Jest & độ bao phủ | [`evidence/coverage/`](evidence/coverage/) | Đầy đủ |
 | **YC7 - UI Automation** | Báo cáo kiểm thử tự động Selenium WebDriver | [`docs/07_Selenium_WebDriver_Test_Report.docx`](docs/07_Selenium_WebDriver_Test_Report.docx) | PASS 22/22 |
 | **YC8 - Performance Test** | Báo cáo hiệu năng JMeter & HTML Dashboard | [`evidence/jmeter-results/html-report/`](evidence/jmeter-results/html-report/) | Gate PASS |
 | **YC9 - Báo cáo Tổng kết** | Báo cáo thực thi kiểm thử & Đánh giá chất lượng | [`docs/03_Test_Execution_and_Review_Report.docx`](docs/03_Test_Execution_and_Review_Report.docx) | Đầy đủ |

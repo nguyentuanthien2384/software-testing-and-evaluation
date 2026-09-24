@@ -1,6 +1,8 @@
 import { PUT as updateState } from '../../app/api/state/route';
 import { POST as login } from '../../app/api/auth/login/route';
-import { POST as calculatePayroll } from '../../app/api/payroll/route';
+import { POST as logout } from '../../app/api/auth/logout/route';
+import { GET as session } from '../../app/api/auth/session/route';
+import { GET as payrollFormula, POST as calculatePayroll } from '../../app/api/payroll/route';
 import { initialData } from '../initial-data';
 import { createSessionToken, SESSION_COOKIE } from '../session';
 
@@ -90,6 +92,80 @@ describe('bảo vệ API', () => {
     expect(failure.headers.get('set-cookie')).toBeNull();
   });
 
+  test('phiên được đọc từ cookie; đăng xuất xóa cookie', async () => {
+    const unauthenticated = await session(new Request('http://localhost/api/auth/session'));
+    expect(unauthenticated.status).toBe(401);
+
+    const authenticated = await session(new Request('http://localhost/api/auth/session', {
+      headers: { cookie: cookie({ username: 'tester', displayName: 'Kiểm thử viên', role: 'tester' }) }
+    }));
+    expect(authenticated.status).toBe(200);
+    await expect(authenticated.json()).resolves.toEqual({
+      user: { username: 'tester', displayName: 'Kiểm thử viên', role: 'tester' }
+    });
+
+    const signedOut = await logout();
+    expect(signedOut.status).toBe(200);
+    expect(signedOut.headers.get('set-cookie')).toContain('Max-Age=0');
+  });
+
+  test('đăng nhập qua HTTPS gắn cookie Secure', async () => {
+    const response = await login(new Request('https://localhost/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'admin@123' })
+    }));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('set-cookie')).toContain('; Secure');
+  });
+
+  test.each(['null', '[]', '{'])('đăng nhập từ chối JSON không phải đối tượng hợp lệ: %s', async (body) => {
+    const response = await login(new Request('http://localhost/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body
+    }));
+    expect(response.status).toBe(400);
+    expect(response.headers.get('set-cookie')).toBeNull();
+  });
+
+  test('production từ chối đăng nhập khi dùng secret demo và không cấp cookie', async () => {
+    const mutableEnv = process.env as Record<string, string | undefined>;
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousSecret = process.env.AUTH_SESSION_SECRET;
+    try {
+      mutableEnv.NODE_ENV = 'production';
+      process.env.AUTH_SESSION_SECRET = 'change-this-secret';
+      const response = await login(new Request('http://localhost/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'admin', password: 'admin@123' })
+      }));
+      expect(response.status).toBe(503);
+      expect(response.headers.get('set-cookie')).toBeNull();
+      await expect(response.json()).resolves.toMatchObject({ ok: false, error: expect.stringContaining('AUTH_SESSION_SECRET') });
+    } finally {
+      if (previousNodeEnv === undefined) delete mutableEnv.NODE_ENV;
+      else mutableEnv.NODE_ENV = previousNodeEnv;
+      if (previousSecret === undefined) delete process.env.AUTH_SESSION_SECRET;
+      else process.env.AUTH_SESSION_SECRET = previousSecret;
+    }
+  });
+
+  test('PUT state từ chối JSON hỏng với lỗi đầu vào', async () => {
+    const response = await updateState(new Request('http://localhost/api/state', {
+      method: 'PUT',
+      headers: {
+        cookie: cookie({ username: 'admin', displayName: 'Quản trị viên', role: 'admin' }),
+        'Content-Type': 'application/json',
+        'X-State-Version': 'version'
+      },
+      body: '{'
+    }));
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: 'Dữ liệu gửi lên không phải JSON hợp lệ.' });
+  });
+
   test('API tính lương chấp nhận các chỉ số thập phân dương', async () => {
     const response = await calculatePayroll(payrollRequest({
       hours: '45',
@@ -104,6 +180,16 @@ describe('bảo vệ API', () => {
       convertedHours: 48.6,
       amount: 13899600
     });
+  });
+
+  test('công thức tính lương chỉ hiển thị sau khi đăng nhập', async () => {
+    const denied = await payrollFormula(new Request('http://localhost/api/payroll'));
+    expect(denied.status).toBe(401);
+    const allowed = await payrollFormula(new Request('http://localhost/api/payroll', {
+      headers: { cookie: cookie({ username: 'tester', displayName: 'Kiểm thử viên', role: 'tester' }) }
+    }));
+    expect(allowed.status).toBe(200);
+    await expect(allowed.json()).resolves.toMatchObject({ formula: expect.stringContaining('Số tiết') });
   });
 
   test.each([

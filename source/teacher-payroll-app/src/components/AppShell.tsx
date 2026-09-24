@@ -56,6 +56,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, ready, can, logout } = useAuth();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
 
   const isLoginRoute = pathname === '/login';
 
@@ -81,8 +83,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   async function handleLogout() {
-    await logout();
-    router.replace('/login');
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError('');
+    try {
+      if (await logout()) router.replace('/login');
+      else setLogoutError('Không thể đăng xuất. Vui lòng thử lại.');
+    } catch {
+      setLogoutError('Không thể đăng xuất. Vui lòng thử lại.');
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   return (
@@ -124,10 +135,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             <strong data-testid="topbar-user-name">{user.displayName}</strong>
             <span data-testid="topbar-user-role">{ROLE_LABELS[user.role]}</span>
           </div>
-          <button className="ghost-btn logout-btn" data-testid="logout-button" type="button" onClick={handleLogout}>
-            Đăng xuất
+          <button className="ghost-btn logout-btn" data-testid="logout-button" type="button" disabled={loggingOut} onClick={handleLogout}>
+            {loggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
           </button>
         </header>
+        {logoutError && <p className="error-message" data-testid="logout-error" role="alert">{logoutError}</p>}
         {children}
       </div>
     </div>

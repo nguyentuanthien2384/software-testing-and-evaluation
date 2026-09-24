@@ -26,7 +26,7 @@ npm run dev
 
 Mở `http://localhost:3000`.
 
-Sao chép `.env.example` thành `.env` và đổi `AUTH_SESSION_SECRET`, `ADMIN_PASSWORD`, `TESTER_PASSWORD` trước khi triển khai. Hai tài khoản mặc định cho môi trường demo là `admin/admin@123` và `tester/tester@123`.
+Sao chép `.env.example` thành `.env` và đổi `AUTH_SESSION_SECRET`, `ADMIN_PASSWORD`, `TESTER_PASSWORD` trước khi triển khai. Khi chạy `npm run start` (production), `AUTH_SESSION_SECRET` phải là chuỗi riêng dài ít nhất 32 ký tự; giá trị mẫu sẽ khiến đăng nhập trả lỗi cấu hình. Hai tài khoản mặc định cho môi trường demo là `admin/admin@123` và `tester/tester@123`.
 
 Các tính năng chính gồm CRUD danh mục có kiểm tra nghiệp vụ, tạo nhiều lớp tự tăng mã, sao chép hệ số từ năm trước, khóa kỳ học, trạng thái khoa, thống kê giáo viên/lớp học phần, tính tiền an toàn và báo cáo CSV hoặc in/lưu PDF.
 

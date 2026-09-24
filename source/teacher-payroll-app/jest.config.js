@@ -18,8 +18,18 @@ const customJestConfig = {
     'src/lib/numeric-input.ts',
     'src/lib/report-export.ts',
     'src/lib/state-version.ts',
-    'src/lib/repository.ts'
-  ]
+    'src/lib/repository.ts',
+    'src/lib/use-app-data.ts',
+    'src/lib/use-auth.tsx'
+  ],
+  coverageThreshold: {
+    global: {
+      statements: 90,
+      branches: 85,
+      functions: 95,
+      lines: 95
+    }
+  }
 };
 
 module.exports = createJestConfig(customJestConfig);

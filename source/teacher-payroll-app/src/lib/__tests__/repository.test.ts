@@ -1,7 +1,7 @@
 import { prisma } from '../db';
 import { initialData } from '../initial-data';
 import { calculateAllPayrollLines } from '../payroll';
-import { computePayrollLines, replaceAllData } from '../repository';
+import { computePayrollLines, getAllData, replaceAllData } from '../repository';
 
 jest.mock('../db', () => {
   const model = () => ({ findMany: jest.fn(), deleteMany: jest.fn(), createMany: jest.fn() });
@@ -55,6 +55,28 @@ function mockDatabaseData() {
   mockedPrisma.classCoefficient.findMany.mockResolvedValue(initialData.classCoefficients);
 }
 
+describe('getAllData', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDatabaseData();
+  });
+
+  test('ghép đủ mười bảng thành snapshot mà giao diện sử dụng', async () => {
+    await expect(getAllData()).resolves.toEqual(initialData);
+    for (const model of [
+      mockedPrisma.degree, mockedPrisma.department, mockedPrisma.teacher,
+      mockedPrisma.subject, mockedPrisma.semester, mockedPrisma.teachingClass,
+      mockedPrisma.assignment, mockedPrisma.paymentRate,
+      mockedPrisma.degreeCoefficient, mockedPrisma.classCoefficient
+    ]) expect(model.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  test('không che lỗi đọc CSDL bằng snapshot rỗng', async () => {
+    mockedPrisma.teacher.findMany.mockRejectedValue(new Error('database offline'));
+    await expect(getAllData()).rejects.toThrow('database offline');
+  });
+});
+
 describe('computePayrollLines', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -93,6 +115,8 @@ describe('computePayrollLines', () => {
 });
 
 describe('replaceAllData', () => {
+  beforeEach(() => jest.clearAllMocks());
+
   test('ghi dữ liệu trong một transaction và đúng thứ tự phụ thuộc chính', async () => {
     mockedPrisma.$transaction.mockResolvedValue([]);
 
@@ -109,5 +133,10 @@ describe('replaceAllData', () => {
       .toBeLessThan(mockedPrisma.teacher.createMany.mock.invocationCallOrder[0]);
     expect(mockedPrisma.teacher.createMany.mock.invocationCallOrder[0])
       .toBeLessThan(mockedPrisma.assignment.createMany.mock.invocationCallOrder[0]);
+  });
+
+  test('chuyển tiếp lỗi transaction để API không báo lưu thành công giả', async () => {
+    mockedPrisma.$transaction.mockRejectedValue(new Error('write failed'));
+    await expect(replaceAllData(initialData)).rejects.toThrow('write failed');
   });
 });

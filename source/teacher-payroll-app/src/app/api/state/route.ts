@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { getAllData, replaceAllData } from '@/lib/repository';
 import { initialData } from '@/lib/initial-data';
-import { validateAppData } from '@/lib/app-data-validation';
+import { validateAppData, validateLockedSemesterTransition } from '@/lib/app-data-validation';
+import { userCan } from '@/lib/auth';
 import { requirePermission } from '@/lib/session';
 import { createStateVersion } from '@/lib/state-version';
 
@@ -38,8 +39,15 @@ export async function PUT(request: Request) {
   const authorization = requirePermission(request, 'data:manage');
   if (authorization instanceof Response) return authorization;
 
+  let payload: unknown;
   try {
-    const validation = validateAppData(await request.json());
+    payload = await request.json();
+  } catch {
+    return Response.json({ ok: false, error: 'Dữ liệu gửi lên không phải JSON hợp lệ.' }, { status: 400 });
+  }
+
+  try {
+    const validation = validateAppData(payload);
     if (!validation.ok) {
       return Response.json({ ok: false, error: validation.errors[0], errors: validation.errors }, { status: 400 });
     }
@@ -56,6 +64,17 @@ export async function PUT(request: Request) {
           { ok: false, error: 'Dữ liệu đã được thay đổi ở nơi khác. Hãy tải lại trang trước khi lưu.' },
           { status: 409 }
         );
+      }
+      const isDemoReset = userCan(authorization, 'system:reset') &&
+        createStateVersion(validation.data) === createStateVersion(initialData);
+      if (!isDemoReset) {
+        const transitionErrors = validateLockedSemesterTransition(current, validation.data);
+        if (transitionErrors.length > 0) {
+          return Response.json(
+            { ok: false, error: transitionErrors[0], errors: transitionErrors },
+            { status: 400 }
+          );
+        }
       }
       await replaceAllData(validation.data);
       const nextVersion = createStateVersion(validation.data);

@@ -3,11 +3,26 @@ import { AuthUser, Permission, userCan } from './auth';
 
 export const SESSION_COOKIE = 'teacher_payroll_session';
 const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
+const DEV_SECRET = 'n01-g11-dev-session-secret-change-in-production';
+
+export class SessionConfigurationError extends Error {
+  constructor() {
+    super('AUTH_SESSION_SECRET phải là chuỗi bí mật riêng có ít nhất 32 ký tự khi chạy production.');
+    this.name = 'SessionConfigurationError';
+  }
+}
 
 type SessionPayload = AuthUser & { expiresAt: number };
 
 function getSecret(): string {
-  return process.env.AUTH_SESSION_SECRET ?? 'n01-g11-dev-session-secret-change-in-production';
+  const configured = process.env.AUTH_SESSION_SECRET;
+  if (process.env.NODE_ENV === 'production' && (
+    !configured || configured.trim().length < 32 ||
+    configured === 'change-this-secret' || configured === DEV_SECRET
+  )) {
+    throw new SessionConfigurationError();
+  }
+  return configured ?? DEV_SECRET;
 }
 
 function sign(value: string): string {
@@ -35,7 +50,7 @@ export function verifySessionToken(token: string, now = Date.now()): AuthUser | 
   try {
     const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) as Partial<SessionPayload>;
     if (
-      payload.expiresAt === undefined || payload.expiresAt <= now ||
+      typeof payload.expiresAt !== 'number' || !Number.isFinite(payload.expiresAt) || payload.expiresAt <= now ||
       typeof payload.username !== 'string' || typeof payload.displayName !== 'string' ||
       (payload.role !== 'admin' && payload.role !== 'tester')
     ) return null;
@@ -51,7 +66,11 @@ function readCookie(request: Request, name: string): string | null {
     const separator = entry.indexOf('=');
     if (separator < 0) continue;
     if (entry.slice(0, separator).trim() === name) {
-      return decodeURIComponent(entry.slice(separator + 1).trim());
+      try {
+        return decodeURIComponent(entry.slice(separator + 1).trim());
+      } catch {
+        return null;
+      }
     }
   }
   return null;
@@ -72,7 +91,15 @@ export function expiredSessionCookie(): string {
 }
 
 export function requirePermission(request: Request, permission: Permission): AuthUser | Response {
-  const user = readSessionUser(request);
+  let user: AuthUser | null;
+  try {
+    user = readSessionUser(request);
+  } catch (error) {
+    if (error instanceof SessionConfigurationError) {
+      return Response.json({ error: error.message }, { status: 503 });
+    }
+    throw error;
+  }
   if (!user) {
     return Response.json({ error: 'Bạn cần đăng nhập để thực hiện thao tác này.' }, { status: 401 });
   }

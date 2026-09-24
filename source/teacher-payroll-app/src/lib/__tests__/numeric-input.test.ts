@@ -12,7 +12,7 @@ describe('parseNumericDraft', () => {
     expect(parseNumericDraft(value)).toBe(expected);
   });
 
-  test.each(['', '   ', '-', '-0.1', '+', '+12.5', '0x10', '1e3', '143.000,5', '1,2,3'])('từ chối định dạng nhập mơ hồ hoặc số có dấu %p', (value) => {
+  test.each(['', '   ', '-', '-0.1', '+', '+12.5', '0x10', '1e3', '143.000,5', '1,2,3', '9'.repeat(400)])('từ chối định dạng nhập mơ hồ, số có dấu hoặc số vượt giới hạn %p', (value) => {
     expect(parseNumericDraft(value)).toBeNaN();
   });
 

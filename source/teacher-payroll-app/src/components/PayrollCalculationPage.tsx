@@ -99,11 +99,11 @@ export function PayrollCalculationPage() {
         <div className="panel">
           <h2>Tính theo dữ liệu phân công</h2>
           <div className="toolbar start">
-            <select data-testid="payroll-teacher-filter" value={teacherId} onChange={(event) => setTeacherId(event.target.value)}>
+            <select aria-label="Lọc tiền dạy theo giáo viên" data-testid="payroll-teacher-filter" value={teacherId} onChange={(event) => setTeacherId(event.target.value)}>
               <option value="">Tất cả giáo viên</option>
               {data.teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.id} - {teacher.fullName}</option>)}
             </select>
-            <select data-testid="payroll-year-filter" value={year} onChange={(event) => setYear(event.target.value)}>
+            <select aria-label="Lọc tiền dạy theo năm học" data-testid="payroll-year-filter" value={year} onChange={(event) => setYear(event.target.value)}>
               <option value="">Tất cả năm học</option>
               {years.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>

@@ -6,6 +6,18 @@ const ENTITY_KEYS: EntityKey[] = [
   'classes', 'assignments', 'paymentRates', 'degreeCoefficients', 'classCoefficients'
 ];
 const MAX_TEXT_LENGTH = 5000;
+const ENTITY_FIELDS: Record<EntityKey, { strings: readonly string[]; numbers: readonly string[] }> = {
+  degrees: { strings: ['id', 'name', 'shortName', 'createdAt'], numbers: ['coefficient'] },
+  departments: { strings: ['id', 'code', 'name', 'description', 'createdAt', 'status'], numbers: [] },
+  teachers: { strings: ['id', 'fullName', 'dateOfBirth', 'phone', 'email', 'departmentId', 'degreeId', 'status'], numbers: [] },
+  subjects: { strings: ['id', 'code', 'name'], numbers: ['credits', 'totalHours', 'coefficient'] },
+  semesters: { strings: ['id', 'name', 'year', 'startDate', 'endDate', 'status'], numbers: [] },
+  classes: { strings: ['id', 'code', 'subjectId', 'semesterId', 'note'], numbers: ['studentCount'] },
+  assignments: { strings: ['id', 'teacherId', 'classId', 'note'], numbers: ['teachingHours'] },
+  paymentRates: { strings: ['id', 'year', 'effectiveDate'], numbers: ['amount'] },
+  degreeCoefficients: { strings: ['id', 'year', 'degreeId'], numbers: ['coefficient'] },
+  classCoefficients: { strings: ['id', 'year'], numbers: ['minStudents', 'maxStudents', 'coefficient'] }
+};
 
 export type ValidationResult =
   | { ok: true; data: AppData }
@@ -82,7 +94,13 @@ export function validateAppData(input: unknown): ValidationResult {
   const shapeErrors = ENTITY_KEYS
     .filter((key) => !Array.isArray(object[key]))
     .map((key) => `Trường ${key} phải là một danh sách.`);
+  for (const key of Object.keys(object)) {
+    if (!ENTITY_KEYS.includes(key as EntityKey)) shapeErrors.push(`Trường ${key} không được hỗ trợ.`);
+  }
   if (shapeErrors.length > 0) return { ok: false, errors: shapeErrors };
+  if (ENTITY_KEYS.every((key) => (object[key] as unknown[]).length === 0)) {
+    return { ok: false, errors: ['Không thể lưu snapshot trống vì hệ thống sẽ hiển thị lại dữ liệu mẫu.'] };
+  }
 
   const data = input as AppData;
   const errors: string[] = [];
@@ -98,7 +116,16 @@ export function validateAppData(input: unknown): ValidationResult {
         return;
       }
       if (!isNonEmptyString(record.id)) errors.push(`${key}[${index}] thiếu mã định danh.`);
+      const { strings, numbers } = ENTITY_FIELDS[key];
+      const allowed = new Set([...strings, ...numbers]);
+      for (const field of strings) {
+        if (typeof record[field] !== 'string') errors.push(`${key}[${index}].${field} phải là chuỗi.`);
+      }
+      for (const field of numbers) {
+        if (!isFiniteNumber(record[field])) errors.push(`${key}[${index}].${field} phải là số hữu hạn.`);
+      }
       for (const [field, value] of Object.entries(record)) {
+        if (!allowed.has(field)) errors.push(`${key}[${index}].${field} không được hỗ trợ.`);
         if (typeof value === 'string' && value.length > MAX_TEXT_LENGTH) {
           errors.push(`${key}[${index}].${field} vượt quá ${MAX_TEXT_LENGTH} ký tự.`);
         }
@@ -238,18 +265,30 @@ export function validateEntityMutation(
   editingId: string | null
 ): string[] {
   if (editingId && row.id !== editingId) return ['Không được thay đổi mã định danh khi chỉnh sửa.'];
+  if (editingId && !(data[entityKey] as { id: string }[]).some((item) => item.id === editingId)) {
+    return ['Bản ghi cần chỉnh sửa không còn tồn tại.'];
+  }
   if (entityKey === 'teachers') {
     const department = data.departments.find((item) => item.id === row.departmentId);
     if (department?.status === 'Ngừng hoạt động') return ['Không thể xếp giáo viên vào khoa đã ngừng hoạt động.'];
   }
   if (entityKey === 'classes') {
+    const original = editingId ? data.classes.find((item) => item.id === editingId) : undefined;
+    const originalSemester = original ? data.semesters.find((item) => item.id === original.semesterId) : undefined;
     const semester = data.semesters.find((item) => item.id === row.semesterId);
-    if (semester?.status === 'Đã khóa') return ['Không thể thêm hoặc sửa lớp thuộc kỳ học đã khóa.'];
+    if (originalSemester?.status === 'Đã khóa' || semester?.status === 'Đã khóa') {
+      return ['Không thể thêm hoặc sửa lớp thuộc kỳ học đã khóa.'];
+    }
   }
   if (entityKey === 'assignments') {
+    const original = editingId ? data.assignments.find((item) => item.id === editingId) : undefined;
+    const originalClass = original ? data.classes.find((item) => item.id === original.classId) : undefined;
+    const originalSemester = originalClass ? data.semesters.find((item) => item.id === originalClass.semesterId) : undefined;
     const teachingClass = data.classes.find((item) => item.id === row.classId);
     const semester = teachingClass ? data.semesters.find((item) => item.id === teachingClass.semesterId) : undefined;
-    if (semester?.status === 'Đã khóa') return ['Không thể thay đổi phân công của kỳ học đã khóa.'];
+    if (originalSemester?.status === 'Đã khóa' || semester?.status === 'Đã khóa') {
+      return ['Không thể thay đổi phân công của kỳ học đã khóa.'];
+    }
   }
   const currentRows = data[entityKey] as unknown as Record<string, string | number>[];
   const nextRows = editingId
@@ -257,4 +296,53 @@ export function validateEntityMutation(
     : [...currentRows, row];
   const result = validateAppData({ ...data, [entityKey]: nextRows });
   return result.ok ? [] : result.errors;
+}
+
+/** Bảo vệ dữ liệu lịch sử ngay cả khi khách gọi thẳng API lưu toàn bộ snapshot. */
+export function validateLockedSemesterTransition(current: AppData, next: AppData): string[] {
+  const lockedSemesterIds = new Set(current.semesters
+    .filter((semester) => semester.status === 'Đã khóa')
+    .map((semester) => semester.id));
+  const currentClasses = new Map(current.classes.map((item) => [item.id, item]));
+  const nextClasses = new Map(next.classes.map((item) => [item.id, item]));
+  const currentAssignments = new Map(current.assignments.map((item) => [item.id, item]));
+  const nextAssignments = new Map(next.assignments.map((item) => [item.id, item]));
+  const errors: string[] = [];
+
+  const sameRow = (before: Record<string, string | number>, after: Record<string, string | number> | undefined) =>
+    Boolean(after && Object.keys(before).length === Object.keys(after).length &&
+      Object.entries(before).every(([key, value]) => after[key] === value));
+
+  for (const teachingClass of current.classes) {
+    if (lockedSemesterIds.has(teachingClass.semesterId) && !sameRow(teachingClass, nextClasses.get(teachingClass.id))) {
+      errors.push(`Không thể thay đổi hoặc xóa lớp ${teachingClass.id} thuộc kỳ học đã khóa.`);
+    }
+  }
+  for (const teachingClass of next.classes) {
+    const previous = currentClasses.get(teachingClass.id);
+    if (lockedSemesterIds.has(teachingClass.semesterId) &&
+      (!previous || !lockedSemesterIds.has(previous.semesterId))) {
+      errors.push(`Không thể thêm hoặc chuyển lớp ${teachingClass.id} vào kỳ học đã khóa.`);
+    }
+  }
+
+  const lockedClassIds = new Set(current.classes
+    .filter((item) => lockedSemesterIds.has(item.semesterId))
+    .map((item) => item.id));
+  const nextLockedClassIds = new Set(next.classes
+    .filter((item) => lockedSemesterIds.has(item.semesterId))
+    .map((item) => item.id));
+  for (const assignment of current.assignments) {
+    if (lockedClassIds.has(assignment.classId) && !sameRow(assignment, nextAssignments.get(assignment.id))) {
+      errors.push(`Không thể thay đổi hoặc xóa phân công ${assignment.id} thuộc kỳ học đã khóa.`);
+    }
+  }
+  for (const assignment of next.assignments) {
+    const previous = currentAssignments.get(assignment.id);
+    if (nextLockedClassIds.has(assignment.classId) &&
+      (!previous || !lockedClassIds.has(previous.classId))) {
+      errors.push(`Không thể thêm hoặc chuyển phân công ${assignment.id} vào kỳ học đã khóa.`);
+    }
+  }
+  return Array.from(new Set(errors));
 }

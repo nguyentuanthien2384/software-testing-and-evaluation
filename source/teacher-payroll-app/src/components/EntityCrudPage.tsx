@@ -51,6 +51,8 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   const [form, setForm] = useState<Row>(() => buildEmptyRow(fields, entityKey, rows, idPrefix));
   const [message, setMessage] = useState<string>('');
   const [batchCount, setBatchCount] = useState('1');
+  const formDirty = useRef(false);
+  const submitPending = useRef(false);
   const rejectedNumericFields = useRef(new Set<string>());
   const rejectedBatchInput = useRef(false);
   const [copySourceYear, setCopySourceYear] = useState('');
@@ -66,7 +68,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
 
   // Tạo mã dựa trên dữ liệu thật sau khi API hoàn tất, tránh trùng mã từ dữ liệu mẫu ban đầu.
   useEffect(() => {
-    if (loaded && !editingId) setForm(buildEmptyRow(fields, entityKey, rows, idPrefix));
+    if (loaded && !editingId && !formDirty.current) setForm(buildEmptyRow(fields, entityKey, rows, idPrefix));
   }, [loaded, rows, editingId, fields, entityKey, idPrefix]);
 
   const coefficientYears = useMemo(
@@ -82,6 +84,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   }, [allowCopyPreviousYear, loaded, copySourceYear, coefficientYears]);
 
   function startCreate(options?: { keepMessage?: boolean }) {
+    formDirty.current = false;
     rejectedNumericFields.current.clear();
     rejectedBatchInput.current = false;
     setEditingId(null);
@@ -90,6 +93,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   }
 
   function startEdit(row: Row) {
+    formDirty.current = false;
     rejectedNumericFields.current.clear();
     setEditingId(row.id);
     setForm({ ...row });
@@ -98,62 +102,68 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!canManage) {
-      setMessage('Bạn không có quyền thay đổi dữ liệu (chỉ tài khoản quản trị viên).');
-      return;
-    }
-    if (!loaded || saving || loadError) {
-      setMessage(loadError || 'Dữ liệu đang được tải. Vui lòng chờ.');
-      return;
-    }
-    const normalized = normalizeRow(form, visibleFields);
-    const errors = validateRow(normalized, visibleFields);
-    const normalizedBatchCount = parseNumericDraft(batchCount);
-    if (!editingId && allowBulkCreate && entityKey === 'classes' && normalizedBatchCount !== 1) {
+    if (submitPending.current) return;
+    submitPending.current = true;
+    try {
+      if (!canManage) {
+        setMessage('Bạn không có quyền thay đổi dữ liệu (chỉ tài khoản quản trị viên).');
+        return;
+      }
+      if (!loaded || saving || loadError) {
+        setMessage(loadError || 'Dữ liệu đang được tải. Vui lòng chờ.');
+        return;
+      }
+      const normalized = normalizeRow(form, visibleFields);
+      const errors = validateRow(normalized, visibleFields);
+      const normalizedBatchCount = parseNumericDraft(batchCount);
+      if (!editingId && allowBulkCreate && entityKey === 'classes' && normalizedBatchCount !== 1) {
+        errors.push(...validateEntityMutation(entityKey, normalized, data, editingId));
+        if (errors.length > 0) {
+          setMessage(Array.from(new Set(errors)).join(' '));
+          return;
+        }
+        const batch = buildTeachingClassBatch(
+          normalized as unknown as AppData['classes'][number],
+          normalizedBatchCount,
+          data.classes
+        );
+        if (!batch.ok) {
+          setMessage(batch.error);
+          return;
+        }
+        const validation = validateAppData({ ...data, classes: [...data.classes, ...batch.classes] });
+        if (!validation.ok) {
+          setMessage(validation.errors.join(' '));
+          return;
+        }
+        const result = await addItems(entityKey, batch.classes);
+        if (!result.ok) {
+          setMessage(result.error);
+          return;
+        }
+        setMessage(`Đã thêm ${batch.classes.length} lớp học phần thành công.`);
+        setBatchCount('1');
+        startCreate({ keepMessage: true });
+        return;
+      }
       errors.push(...validateEntityMutation(entityKey, normalized, data, editingId));
       if (errors.length > 0) {
         setMessage(Array.from(new Set(errors)).join(' '));
         return;
       }
-      const batch = buildTeachingClassBatch(
-        normalized as unknown as AppData['classes'][number],
-        normalizedBatchCount,
-        data.classes
-      );
-      if (!batch.ok) {
-        setMessage(batch.error);
-        return;
-      }
-      const validation = validateAppData({ ...data, classes: [...data.classes, ...batch.classes] });
-      if (!validation.ok) {
-        setMessage(validation.errors.join(' '));
-        return;
-      }
-      const result = await addItems(entityKey, batch.classes);
+
+      const result = editingId
+        ? await updateItem(entityKey, editingId, normalized)
+        : await addItem(entityKey, normalized);
       if (!result.ok) {
         setMessage(result.error);
         return;
       }
-      setMessage(`Đã thêm ${batch.classes.length} lớp học phần thành công.`);
-      setBatchCount('1');
+      setMessage(editingId ? 'Cập nhật dữ liệu thành công.' : 'Thêm dữ liệu thành công.');
       startCreate({ keepMessage: true });
-      return;
+    } finally {
+      submitPending.current = false;
     }
-    errors.push(...validateEntityMutation(entityKey, normalized, data, editingId));
-    if (errors.length > 0) {
-      setMessage(Array.from(new Set(errors)).join(' '));
-      return;
-    }
-
-    const result = editingId
-      ? await updateItem(entityKey, editingId, normalized)
-      : await addItem(entityKey, normalized);
-    if (!result.ok) {
-      setMessage(result.error);
-      return;
-    }
-    setMessage(editingId ? 'Cập nhật dữ liệu thành công.' : 'Thêm dữ liệu thành công.');
-    startCreate({ keepMessage: true });
   }
 
   async function handleDelete(row: Row) {
@@ -223,7 +233,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
               {visibleFields.map((field) => (
                 <label className={field.type === 'textarea' ? 'full' : ''} key={field.name}>
                   {field.label}
-                  {renderField(field, form, setForm, data, saving || !loaded || Boolean(loadError) || (Boolean(editingId) && field.name === 'id'), rejectedNumericFields)}
+                  {renderField(field, form, (row) => { formDirty.current = true; setForm(row); }, data, saving || !loaded || Boolean(loadError) || (Boolean(editingId) && field.name === 'id'), rejectedNumericFields)}
                 </label>
               ))}
               {allowBulkCreate && !editingId && (

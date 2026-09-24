@@ -122,6 +122,23 @@ describe('lookup cấu hình', () => {
 
   test('lấy hệ số bằng cấp theo năm học', () => {
     expect(findDegreeCoefficient(initialData, 'DEG-TS', '2024-2025')).toBe(2);
+    expect(findDegreeCoefficient(initialData, 'DEG-TS', '2025-2026')).toBe(2.1);
+  });
+
+  test('không dùng hệ số mặc định khi năm đã cấu hình nhưng thiếu bằng cấp cần tính', () => {
+    const data = structuredClone(initialData);
+    data.degreeCoefficients = data.degreeCoefficients.filter((item) =>
+      item.year !== '2024-2025' || item.degreeId !== 'DEG-TS'
+    );
+    expect(() => findDegreeCoefficient(data, 'DEG-TS', '2024-2025')).toThrow(
+      'Chưa thiết lập hệ số bằng cấp TS cho năm học 2024-2025.'
+    );
+    const result = calculateAllPayrollLinesSafely(data);
+    expect(result.errors).toEqual([
+      'ASG-001: Chưa thiết lập hệ số bằng cấp TS cho năm học 2024-2025.',
+      'ASG-003: Chưa thiết lập hệ số bằng cấp TS cho năm học 2024-2025.'
+    ]);
+    expect(result.lines).toHaveLength(data.assignments.length - 2);
   });
 
   test.each([
@@ -138,6 +155,10 @@ describe('lookup cấu hình', () => {
 describe('quản lý giáo viên', () => {
   test('sinh mã giáo viên tiếp theo', () => {
     expect(generateNextTeacherCode([{ id: 'GV0001' }, { id: 'GV0009' }])).toBe('GV0010');
+    expect(generateNextTeacherCode([])).toBe('GV0001');
+    expect(generateNextTeacherCode([
+      { id: 'GV0009' }, { id: 'OTHER1000' }, { id: 'GV12.5' }, { id: 'GV9007199254740993' }
+    ])).toBe('GV0010');
   });
 
   test('tính tuổi', () => {
@@ -146,6 +167,17 @@ describe('quản lý giáo viên', () => {
 
   test('không chấp nhận ngày sinh không tồn tại', () => {
     expect(getAge('2024-02-30', new Date(2026, 0, 2))).toBe(0);
+  });
+
+  test('tuổi 22 và 70 được chấp nhận đúng vào ngày sinh nhật', () => {
+    const teacher = initialData.teachers[0];
+    const now = new Date(2026, 8, 24);
+    for (const dateOfBirth of ['2004-09-24', '1955-09-25']) {
+      expect(validateTeacher({ ...teacher, dateOfBirth }, now)).not.toContain('Tuổi giáo viên phải trong khoảng 22 đến 70.');
+    }
+    for (const dateOfBirth of ['2004-09-25', '1955-09-24']) {
+      expect(validateTeacher({ ...teacher, dateOfBirth }, now)).toContain('Tuổi giáo viên phải trong khoảng 22 đến 70.');
+    }
   });
 
   test('bắt lỗi email và số điện thoại', () => {

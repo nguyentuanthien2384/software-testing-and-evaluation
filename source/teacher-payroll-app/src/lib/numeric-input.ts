@@ -20,5 +20,6 @@ export function parseNumericDraft(value: string | number): number {
   if (typeof value === 'number') return Number.isFinite(value) && value >= 0 ? value : Number.NaN;
   const normalized = value.trim().replace(',', '.');
   if (!NON_NEGATIVE_DECIMAL_NUMBER.test(normalized)) return Number.NaN;
-  return Number(normalized);
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
 }

@@ -58,8 +58,9 @@ export default function LoginPage() {
               data-testid="login-username"
               name="username"
               autoComplete="username"
+              required
               value={username}
-              onChange={(event) => setUsername(event.target.value)}
+              onChange={(event) => { setUsername(event.target.value); setError(""); }}
               placeholder="admin hoặc tester"
             />
           </label>
@@ -70,8 +71,9 @@ export default function LoginPage() {
               name="password"
               type="password"
               autoComplete="current-password"
+              required
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => { setPassword(event.target.value); setError(""); }}
               placeholder="Nhập mật khẩu"
             />
           </label>

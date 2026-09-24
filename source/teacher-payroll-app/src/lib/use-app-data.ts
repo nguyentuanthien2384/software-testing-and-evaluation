@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { initialData } from './initial-data';
+import { validateAppData } from './app-data-validation';
 import { AppData, EntityKey } from './types';
 
 const STORAGE_KEY = 'n01-g11-teacher-payroll-data-v3';
@@ -31,6 +32,7 @@ export function useAppData() {
   const dataRef = useRef<AppData>(initialData);
   const versionRef = useRef<string | null>(null);
   const mutationQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const pendingMutations = useRef(0);
 
   const cacheData = useCallback((nextData: AppData) => {
     try {
@@ -46,9 +48,13 @@ export function useAppData() {
     try {
       const response = await fetch('/api/state', { cache: 'no-store' });
       if (!response.ok) throw new Error(await responseError(response));
-      const remote = await response.json() as AppData;
-      const nextData = { ...initialData, ...remote };
-      versionRef.current = response.headers.get(VERSION_HEADER);
+      const version = response.headers.get(VERSION_HEADER);
+      if (!version) throw new Error('Máy chủ không trả phiên bản dữ liệu. Hãy tải lại trang.');
+      const remote = await response.json() as unknown;
+      const validation = validateAppData(remote);
+      if (!validation.ok) throw new Error(`Dữ liệu từ máy chủ không hợp lệ: ${validation.errors[0]}`);
+      const nextData = validation.data;
+      versionRef.current = version;
       dataRef.current = nextData;
       setData(nextData);
       cacheData(nextData);
@@ -57,7 +63,10 @@ export function useAppData() {
       let cached = initialData;
       try {
         const stored = window.localStorage.getItem(STORAGE_KEY);
-        if (stored) cached = { ...initialData, ...JSON.parse(stored) } as AppData;
+        if (stored) {
+          const validation = validateAppData(JSON.parse(stored));
+          if (validation.ok) cached = validation.data;
+        }
       } catch {
         cached = initialData;
       }
@@ -77,7 +86,6 @@ export function useAppData() {
     const version = versionRef.current;
     if (!version) return { ok: false, error: 'Chưa có kết nối với cơ sở dữ liệu. Hãy tải lại trang trước khi lưu.' };
 
-    setSaving(true);
     try {
       const response = await fetch('/api/state', {
         method: 'PUT',
@@ -96,14 +104,17 @@ export function useAppData() {
       return { ok: true };
     } catch {
       return { ok: false, error: 'Mất kết nối khi lưu. Dữ liệu trên màn hình chưa bị thay đổi.' };
-    } finally {
-      setSaving(false);
     }
   }, [cacheData]);
 
   const enqueueMutation = useCallback((build: (current: AppData) => AppData): Promise<SaveResult> => {
+    pendingMutations.current += 1;
+    setSaving(true);
     const pending = mutationQueue.current.then(() => persist(build(dataRef.current)));
-    mutationQueue.current = pending.then(() => undefined, () => undefined);
+    mutationQueue.current = pending.then(() => undefined, () => undefined).finally(() => {
+      pendingMutations.current -= 1;
+      if (pendingMutations.current === 0) setSaving(false);
+    });
     return pending;
   }, [persist]);
 

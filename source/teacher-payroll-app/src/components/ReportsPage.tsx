@@ -69,15 +69,15 @@ export function ReportsPage() {
 
       <section className="panel">
         <div className="toolbar start">
-          <select data-testid="reports-year-filter" value={year} onChange={(event) => setYear(event.target.value)}>
+          <select aria-label="Lọc báo cáo theo năm học" data-testid="reports-year-filter" value={year} onChange={(event) => setYear(event.target.value)}>
             <option value="">Tất cả năm học</option>
             {years.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
-          <select data-testid="reports-department-filter" value={department} onChange={(event) => setDepartment(event.target.value)}>
+          <select aria-label="Lọc báo cáo theo khoa" data-testid="reports-department-filter" value={department} onChange={(event) => setDepartment(event.target.value)}>
             <option value="">Tất cả khoa</option>
             {departments.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
-          <select data-testid="reports-teacher-filter" value={teacherId} onChange={(event) => setTeacherId(event.target.value)}>
+          <select aria-label="Lọc báo cáo theo giáo viên" data-testid="reports-teacher-filter" value={teacherId} onChange={(event) => setTeacherId(event.target.value)}>
             <option value="">Tất cả giáo viên</option>
             {data.teachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.id} - {teacher.fullName}</option>)}
           </select>

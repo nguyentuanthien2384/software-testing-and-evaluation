@@ -27,6 +27,7 @@ Mở 1 cửa sổ PowerShell và để chạy nền:
 ```powershell
 cd source\teacher-payroll-app
 npm install
+$env:AUTH_SESSION_SECRET = node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))"
 npm run build
 npm run start    # chạy tại http://localhost:3000
 ```
