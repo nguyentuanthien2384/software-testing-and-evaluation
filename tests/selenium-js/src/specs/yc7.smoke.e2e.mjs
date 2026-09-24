@@ -41,6 +41,31 @@ describe('YC7 Selenium WebDriver smoke/regression suite', function () {
     await dashboard.assertLoaded();
   });
 
+  it('YC7-NAV-002 tất cả màn hình nghiệp vụ chính đều tải được', async function () {
+    const pages = [
+      ['/degrees', 'degrees-table'],
+      ['/departments', 'departments-table'],
+      ['/teachers', 'teachers-table'],
+      ['/teacher-statistics', 'teacher-statistics-table'],
+      ['/subjects', 'subjects-table'],
+      ['/semesters', 'semesters-table'],
+      ['/classes', 'classes-table'],
+      ['/assignments', 'assignments-table'],
+      ['/class-statistics', 'class-statistics-table'],
+      ['/payment-rates', 'paymentRates-table'],
+      ['/teacher-coefficients', 'degreeCoefficients-table'],
+      ['/class-coefficients', 'classCoefficients-table'],
+      ['/payroll', 'payroll-page'],
+      ['/reports', 'reports-page'],
+      ['/system', 'system-reset-button']
+    ];
+    const dashboard = new DashboardPage(driver);
+    for (const [route, testId] of pages) {
+      await dashboard.open(route);
+      await dashboard.byTestId(testId);
+    }
+  });
+
   it('YC7-CRUD-001 thêm mới bằng cấp và tìm kiếm lại trên bảng', async function () {
     const degrees = new CrudPage(driver, '/degrees', 'degrees', 'Quản lý Bằng cấp');
     const suffix = Date.now().toString().slice(-6);

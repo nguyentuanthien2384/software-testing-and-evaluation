@@ -26,6 +26,9 @@ describe('LOGIN Selenium suite - đăng nhập & phân quyền', function () {
     await driver.manage().deleteAllCookies();
     // Không còn session -> /login sẽ ở lại, không bị redirect về '/'.
     await login.open('/login');
+    // AppShell/AuthProvider sống xuyên route trong App Router; refresh để
+    // phiên cũ trong memory không ảnh hưởng đến test kế tiếp.
+    await driver.navigate().refresh();
     await login.byTestId('login-username');
   });
 
@@ -103,5 +106,15 @@ describe('LOGIN Selenium suite - đăng nhập & phân quyền', function () {
         .catch((error) => done(String(error)));
     `);
     assert.equal(status, 403);
+  });
+
+  it('LOGIN-009 đăng xuất xóa phiên và không khôi phục lại sau khi tải lại', async function () {
+    const login = new LoginPage(driver);
+    await login.loginAs('admin', 'admin@123');
+    await login.logout();
+    await login.byTestId('login-page');
+    await driver.navigate().refresh();
+    await login.byTestId('login-page');
+    assert.match(await driver.getCurrentUrl(), /\/login/);
   });
 });

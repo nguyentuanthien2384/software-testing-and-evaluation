@@ -68,6 +68,9 @@ export class LoginPage extends BasePage {
 
   async logout() {
     const button = await this.byTestId('logout-button');
-    await button.click();
+    // Sau các test có executeAsyncScript, native click đôi khi bị Chrome
+    // giữ focus ở request cũ; dispatch click trên chính phần tử vẫn đi qua
+    // React handler và ổn định hơn cho ca kiểm thử phiên.
+    await this.driver.executeScript('arguments[0].click();', button);
   }
 }

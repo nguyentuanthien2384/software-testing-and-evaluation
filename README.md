@@ -326,7 +326,7 @@ Bộ kiểm thử YC7 được xây dựng trên nền tảng **JavaScript + Moc
 Đảm bảo ứng dụng đang chạy tại cổng `3000` (`npm run start` trên bản build), mở một cửa sổ PowerShell mới:
 
 ```powershell
-# Chạy toàn bộ 22 test case ở chế độ Headless
+# Chạy toàn bộ 24 test case ở chế độ Headless
 ./scripts/run-yc7.ps1
 
 # Hoặc quan sát trực tiếp trình duyệt Chrome tự động thao tác
@@ -342,7 +342,7 @@ $env:BASE_URL="http://127.0.0.1:3000"; $env:BROWSER="chrome"; npm run test:junit
 
 - **Báo cáo kết quả JUnit XML:** `tests/selenium-js/reports/junit/yc7-selenium-results.xml`
 - **Ảnh chụp màn hình:** Khi phát hiện lỗi hoặc assert fail, ảnh chụp sẽ tự động lưu vào `evidence/screenshots/`.
-- **Kết quả thực tế ngày 08/09/2026:** Selenium JS **22/22 Test Cases PASS (100%)**; bộ smoke test Selenium Python **5/5 PASS**.
+- **Kết quả xác nhận gần nhất:** Selenium JS **24/24 Test Cases PASS (100%)**; bộ smoke test Selenium Python **5/5 PASS** theo minh chứng hiện có.
 
 ---
 
@@ -397,7 +397,7 @@ Quy trình hoạt động trên môi trường máy ảo Ubuntu:
 1. **Thiết lập Môi trường:** Cài đặt Node.js 20 và Java 11.
 2. **Kiểm thử Đơn vị & Cơ sở Dữ liệu:** Chạy Jest test suite, thực hiện Prisma migrate và seed CSDL SQLite riêng cho CI.
 3. **Build & Khởi động Ứng dụng:** Build phiên bản production của Next.js và khởi chạy nền, đợi endpoint `/api/health` sẵn sàng.
-4. **Kiểm thử Giao diện (YC7):** Khởi chạy 22 test case Selenium WebDriver trên Google Chrome Headless.
+4. **Kiểm thử Giao diện (YC7):** Khởi chạy 24 test case Selenium WebDriver trên Google Chrome Headless.
 5. **Cài đặt & Chạy Kiểm thử Hiệu năng (YC8):** Tải Apache JMeter, thực hiện tải 50 VUsers và kiểm tra Performance Gate.
 6. **Lưu trữ Bằng chứng (Artifacts Upload):** Đóng gói và upload tự động các tệp JUnit XML, Screenshot, file `.jtl` và HTML Dashboard lên GitHub Artifacts.
 
@@ -469,7 +469,7 @@ Tất cả các bằng chứng kiểm thử và tài liệu đặc tả đều �
 | **YC4 - Ma trận Truy vết** | Traceability Matrix & Checklist | [`docs/05_Project_Artifacts_Checklists_Traceability.xlsx`](docs/05_Project_Artifacts_Checklists_Traceability.xlsx) | Đầy đủ |
 | **YC5 - SQA Test Plan** | Kế hoạch đảm bảo chất lượng phần mềm | [`docs/02_SQA_Test_Plan.docx`](docs/02_SQA_Test_Plan.docx) | Đầy đủ |
 | **YC6 - Kiểm thử Đơn vị** | Báo cáo kiểm thử Jest & độ bao phủ | [`evidence/coverage/`](evidence/coverage/) | Đầy đủ |
-| **YC7 - UI Automation** | Báo cáo kiểm thử tự động Selenium WebDriver | [`docs/07_Selenium_WebDriver_Test_Report.docx`](docs/07_Selenium_WebDriver_Test_Report.docx) | PASS 22/22 |
+| **YC7 - UI Automation** | Báo cáo kiểm thử tự động Selenium WebDriver | [`docs/07_Selenium_WebDriver_Test_Report.docx`](docs/07_Selenium_WebDriver_Test_Report.docx) | PASS 24/24 |
 | **YC8 - Performance Test** | Báo cáo hiệu năng JMeter & HTML Dashboard | [`evidence/jmeter-results/html-report/`](evidence/jmeter-results/html-report/) | Gate PASS |
 | **YC9 - Báo cáo Tổng kết** | Báo cáo thực thi kiểm thử & Đánh giá chất lượng | [`docs/03_Test_Execution_and_Review_Report.docx`](docs/03_Test_Execution_and_Review_Report.docx) | Đầy đủ |
 

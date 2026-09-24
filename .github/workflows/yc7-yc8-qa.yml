@@ -1,6 +1,8 @@
 name: YC7 Selenium and YC8 JMeter
 
 on:
+  push:
+    branches: [main, master]
   pull_request:
   workflow_dispatch:
 
@@ -40,7 +42,10 @@ jobs:
 
       - name: Run unit tests
         working-directory: source/teacher-payroll-app
-        run: npm test -- --runInBand
+        run: npm run coverage -- --runInBand --coverageReporters=text-summary
+
+      - name: Test JMeter quality gate logic
+        run: npm run test:jmeter-checker
 
       - name: Verify checked-in SQLite evidence
         run: npm run test:sqlite-evidence
@@ -109,6 +114,7 @@ jobs:
           name: yc7-yc8-qa-artifacts
           path: |
             tests/selenium-js/reports/**
+            source/teacher-payroll-app/coverage/**
             evidence/screenshots/**
             evidence/jmeter-results/**
             evidence/dev-smoke-summary.txt

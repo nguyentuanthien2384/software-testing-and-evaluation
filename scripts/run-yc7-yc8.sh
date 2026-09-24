@@ -23,7 +23,7 @@ cleanup() {
 trap cleanup EXIT
 
 cd "$APP_DIR"
-npm install
+npm ci
 
 # The combined local QA command must never mutate prisma/dev.db. Build a fresh,
 # disposable database unless the caller deliberately supplies QA_DATABASE_URL.
@@ -57,7 +57,7 @@ done
 curl -fsS "$BASE_URL/api/health" >/dev/null
 
 cd "$PROJECT_ROOT/tests/selenium-js"
-npm install
+npm ci
 BASE_URL="$BASE_URL" BROWSER="${BROWSER:-chrome}" npm run test:junit
 
 cd "$PROJECT_ROOT"

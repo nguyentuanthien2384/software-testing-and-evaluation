@@ -7,7 +7,9 @@ Bộ test này bổ sung YC7 ở mức có thể chạy tự động bằng Sele
 - Page Object cho Dashboard, CRUD, Payroll và Reports.
 - Smoke/regression suite cho các luồng chính:
   - mở dashboard;
+  - kiểm tra tất cả màn hình nghiệp vụ chính tải được;
   - thêm mới bằng cấp;
+  - đăng xuất và xác nhận phiên không quay lại sau khi tải lại;
   - kiểm tra trang giáo viên;
   - kiểm tra bộ hệ số lớp `0,9 / 1,0 / 1,1 / 1,2` với khoảng sĩ số bắt đầu từ `1`;
   - xác minh dấu âm bị chặn trên các ô số và giá trị `0` không tạo kết quả tính;
