@@ -281,6 +281,10 @@ export function validateEntityMutation(
     }
   }
   if (entityKey === 'assignments') {
+    const teacher = data.teachers.find((item) => item.id === row.teacherId);
+    if (teacher && teacher.status !== 'Đang giảng dạy') {
+      return [`Không thể phân công giáo viên ${teacher.fullName} vì trạng thái là ${teacher.status}.`];
+    }
     const original = editingId ? data.assignments.find((item) => item.id === editingId) : undefined;
     const originalClass = original ? data.classes.find((item) => item.id === original.classId) : undefined;
     const originalSemester = originalClass ? data.semesters.find((item) => item.id === originalClass.semesterId) : undefined;
@@ -342,6 +346,24 @@ export function validateLockedSemesterTransition(current: AppData, next: AppData
     if (nextLockedClassIds.has(assignment.classId) &&
       (!previous || !lockedClassIds.has(previous.classId))) {
       errors.push(`Không thể thêm hoặc chuyển phân công ${assignment.id} vào kỳ học đã khóa.`);
+    }
+  }
+  return Array.from(new Set(errors));
+}
+
+/** Chỉ chặn phân công mới hoặc phân công bị sửa sang giáo viên không còn giảng dạy. */
+export function validateTeacherAssignmentTransition(current: AppData, next: AppData): string[] {
+  const currentAssignments = new Map(current.assignments.map((item) => [item.id, item]));
+  const teachers = new Map(next.teachers.map((item) => [item.id, item]));
+  const errors: string[] = [];
+  const sameRow = (before: Record<string, string | number> | undefined, after: Record<string, string | number>) =>
+    Boolean(before && Object.keys(before).length === Object.keys(after).length &&
+      Object.entries(before).every(([key, value]) => after[key] === value));
+
+  for (const assignment of next.assignments) {
+    const teacher = teachers.get(assignment.teacherId);
+    if (teacher && teacher.status !== 'Đang giảng dạy' && !sameRow(currentAssignments.get(assignment.id), assignment)) {
+      errors.push(`${assignment.id}: không thể phân công giáo viên ${teacher.fullName} vì trạng thái là ${teacher.status}.`);
     }
   }
   return Array.from(new Set(errors));

@@ -289,6 +289,28 @@ test('đặt lại dữ liệu mẫu chỉ cập nhật giao diện và cache sa
   expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}')).toEqual(initialData);
 });
 
+test('khôi phục snapshot backup tuần tự qua API và chỉ cập nhật sau khi xác nhận', async () => {
+  const customized: AppData = {
+    ...initialData,
+    paymentRates: initialData.paymentRates.map((rate) =>
+      rate.year === '2025-2026' ? { ...rate, amount: rate.amount + 5000 } : rate
+    )
+  };
+  fetchMock
+    .mockResolvedValueOnce(mockResponse(initialData, 200, 'version-1'))
+    .mockResolvedValueOnce(mockResponse({ ok: true }, 200, 'version-2'));
+  const hook = renderHook(() => useAppData());
+  await waitFor(() => expect(hook.result.current.loaded).toBe(true));
+
+  await act(async () => {
+    expect(await hook.result.current.restoreData(customized)).toEqual({ ok: true });
+  });
+
+  expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual(customized);
+  expect(hook.result.current.data).toEqual(customized);
+  expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}')).toEqual(customized);
+});
+
 test('ghi đầu mất mạng không làm thao tác sau dùng dữ liệu chưa lưu hoặc phiên bản sai', async () => {
   fetchMock
     .mockResolvedValueOnce(mockResponse(initialData, 200, 'version-1'))

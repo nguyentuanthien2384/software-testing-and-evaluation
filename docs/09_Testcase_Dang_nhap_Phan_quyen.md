@@ -92,3 +92,5 @@ File: `src/lib/__tests__/auth.test.ts` (chạy bằng `npm test`).
 | Thông báo chỉ xem (tester) | `<entity>-readonly-notice` |
 | Reset hệ thống (admin) | `system-reset-button` |
 | Từ chối reset (tester) | `system-reset-denied` |
+| Xuất backup (admin) | `system-export-button` |
+| Khôi phục backup (admin) | `system-import-button`, `system-import-input` |

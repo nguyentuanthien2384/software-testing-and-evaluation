@@ -1,4 +1,4 @@
-import { getSemesterStatus, isValidAcademicYear, validateAppData, validateEntityMutation } from '../app-data-validation';
+import { getSemesterStatus, isValidAcademicYear, validateAppData, validateEntityMutation, validateTeacherAssignmentTransition } from '../app-data-validation';
 import { initialData } from '../initial-data';
 import type { AppData } from '../types';
 
@@ -194,6 +194,15 @@ describe('validateAppData', () => {
     if (!result.ok) expect(result.errors).toContain('Lớp cls-csdl-01 đã được phân công cho giáo viên khác.');
   });
 
+  test.each(['Tạm nghỉ', 'Nghỉ việc'] as const)('giữ được snapshot lịch sử khi giáo viên chuyển sang %s', (status) => {
+    const data = copyData();
+    data.teachers[0] = { ...data.teachers[0], status };
+
+    const result = validateAppData(data);
+
+    expect(result).toEqual({ ok: true, data });
+  });
+
   test('từ chối dữ liệu khi phân công không có định mức của năm học', () => {
     const data = copyData();
     data.paymentRates = data.paymentRates.filter((item) => item.year !== '2024-2025');
@@ -313,6 +322,15 @@ describe('validateAppData', () => {
     ]);
   });
 
+  test('không cho thêm hoặc sửa phân công cho giáo viên không còn giảng dạy', () => {
+    const data = copyData();
+    data.teachers[0] = { ...data.teachers[0], status: 'Tạm nghỉ' };
+
+    expect(validateEntityMutation('assignments', data.assignments[0], data, data.assignments[0].id)).toEqual([
+      `Không thể phân công giáo viên ${data.teachers[0].fullName} vì trạng thái là Tạm nghỉ.`
+    ]);
+  });
+
   test('báo lỗi khi bản ghi cần sửa đã bị xóa', () => {
     const data = copyData();
     expect(validateEntityMutation('degrees', { ...data.degrees[0], id: 'DEG-MISSING' }, data, 'DEG-MISSING')).toEqual([
@@ -325,6 +343,20 @@ describe('validateAppData', () => {
     const changed = { ...data.paymentRates[0], amount: 150000 };
 
     expect(validateEntityMutation('paymentRates', changed, data, changed.id)).toEqual([]);
+  });
+
+  test('chỉ báo lỗi khi phân công cho giáo viên không còn giảng dạy thực sự thay đổi', () => {
+    const current = copyData();
+    const next = copyData();
+    next.teachers[0] = { ...next.teachers[0], status: 'Nghỉ việc' };
+    expect(validateTeacherAssignmentTransition(current, next)).toEqual([]);
+
+    const changedAssignment = next.assignments.find((assignment) => assignment.id === 'ASG-005');
+    if (!changedAssignment) throw new Error('Missing fixture');
+    changedAssignment.teacherId = 'GV0001';
+    expect(validateTeacherAssignmentTransition(current, next)).toEqual([
+      `ASG-005: không thể phân công giáo viên ${next.teachers[0].fullName} vì trạng thái là Nghỉ việc.`
+    ]);
   });
 });
 

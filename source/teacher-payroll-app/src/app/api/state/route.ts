@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { getAllData, replaceAllData } from '@/lib/repository';
 import { initialData } from '@/lib/initial-data';
-import { validateAppData, validateLockedSemesterTransition } from '@/lib/app-data-validation';
+import { validateAppData, validateLockedSemesterTransition, validateTeacherAssignmentTransition } from '@/lib/app-data-validation';
 import { userCan } from '@/lib/auth';
 import { requirePermission } from '@/lib/session';
 import { createStateVersion } from '@/lib/state-version';
@@ -68,7 +68,10 @@ export async function PUT(request: Request) {
       const isDemoReset = userCan(authorization, 'system:reset') &&
         createStateVersion(validation.data) === createStateVersion(initialData);
       if (!isDemoReset) {
-        const transitionErrors = validateLockedSemesterTransition(current, validation.data);
+        const transitionErrors = [
+          ...validateLockedSemesterTransition(current, validation.data),
+          ...validateTeacherAssignmentTransition(current, validation.data)
+        ];
         if (transitionErrors.length > 0) {
           return Response.json(
             { ok: false, error: transitionErrors[0], errors: transitionErrors },

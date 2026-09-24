@@ -146,6 +146,9 @@ export function useAppData() {
       },
       resetData() {
         return enqueueMutation(() => structuredClone(initialData));
+      },
+      restoreData(nextData: AppData) {
+        return enqueueMutation(() => structuredClone(nextData));
       }
     }),
     [enqueueMutation]

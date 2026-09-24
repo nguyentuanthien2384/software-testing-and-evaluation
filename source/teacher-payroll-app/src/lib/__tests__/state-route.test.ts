@@ -82,6 +82,22 @@ describe('API state', () => {
     await expect(GET(request('GET')).then((result) => result.json())).resolves.toEqual(next);
   });
 
+  test('PUT chặn phân công cho giáo viên đang tạm nghỉ hoặc nghỉ việc', async () => {
+    const next = structuredClone(stored);
+    next.teachers[0].status = 'Tạm nghỉ';
+    const changedAssignment = next.assignments.find((assignment) => assignment.id === 'ASG-005');
+    if (!changedAssignment) throw new Error('Missing fixture');
+    changedAssignment.teacherId = 'GV0001';
+
+    const response = await PUT(request('PUT', next, createStateVersion(stored)));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringContaining('không thể phân công giáo viên')
+    });
+    expect(replaceAllDataMock).not.toHaveBeenCalled();
+  });
+
   test.each([
     ['sửa lớp', (data: AppData) => { data.classes[0].note = 'Đã sửa'; }, 'Không thể thay đổi hoặc xóa lớp'],
     ['chuyển lớp sang kỳ mở', (data: AppData) => { data.classes[0].semesterId = 'SEM-2025-1'; }, 'Không thể thay đổi hoặc xóa lớp'],

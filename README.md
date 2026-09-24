@@ -154,6 +154,8 @@ Hỗ trợ cấu hình định mức thù lao cơ bản cho từng năm học v�
 - ⚡ **Batch Operations (Tạo nhiều lớp tự động):** Người dùng chỉ cần chọn học phần, nhập tiền tố mã và số lượng lớp cần mở, hệ thống sẽ tự động tính toán mã số kế tiếp và sinh đồng loạt, tiết kiệm 90% thời gian nhập liệu.
 - 📋 **Sao chép Hệ số từ Năm học Trước:** Cho phép kế thừa toàn bộ cấu hình hệ số bằng cấp của năm học cũ sang năm học mới chỉ trong 1 thao tác chọn năm nguồn $\to$ năm đích.
 - 🛡️ **Cơ chế Tính toán An toàn (Safe Payroll Mode):** Khi xảy ra thiếu sót cấu hình (chưa nhập định mức hoặc thiếu hệ số của một bằng cấp mới tạo), phần mềm không bị crash màn hình trắng mà tách riêng các dòng lỗi ra hộp thoại thông báo màu đỏ, chỉ rõ nguyên nhân và hướng xử lý cho quản trị viên.
+- 💾 **Backup/Restore có kiểm soát:** Quản trị viên có thể xuất snapshot dữ liệu thành file JSON có phiên bản và khôi phục lại sau khi hệ thống kiểm tra schema, ràng buộc tham chiếu, dung lượng file và phiên bản backup.
+- 👤 **Bảo vệ phân công theo trạng thái nhân sự:** Giáo viên đang tạm nghỉ hoặc nghỉ việc không thể được thêm vào phân công mới; dữ liệu snapshot và API cũng áp dụng cùng quy tắc này.
 - 🔒 **Phân quyền Giao diện Động (Role-Based Dynamic UI):**
   - **Tài khoản Admin:** Xem, thêm, sửa, xóa, phân công, tính tiền, xuất báo cáo và reset hệ thống.
   - **Tài khoản Tester:** Chế độ xem an toàn (Read-only), form thao tác tự động chuyển sang trạng thái vô hiệu hóa hoặc ẩn các nút Xóa/Reset, ngăn ngừa rủi ro can thiệp dữ liệu ngoài ý muốn.
@@ -233,7 +235,7 @@ Hệ thống bao gồm **16 màn hình & module chức năng** hoàn chỉnh:
 13. **Thiết lập Hệ số Giáo viên (`/teacher-coefficients`):** Quy định hệ số thù lao theo học vị; hỗ trợ sao chép nhanh cấu hình từ năm trước.
 14. **Thiết lập Hệ số Lớp (`/class-coefficients`):** Quy định hệ số nhân theo quy mô sĩ số sinh viên của lớp học.
 15. **Tính Tiền Dạy (`/payroll`):** Tính toán chi tiết thù lao từng lớp, tổng hợp số tiền của từng giáo viên và toàn trường.
-16. **Báo cáo & Hệ thống (`/reports` & `/system`):** Bộ lọc báo cáo đa chiều, trích xuất dữ liệu CSV, in/lưu PDF chuẩn A4, và công cụ Reset dữ liệu demo.
+16. **Báo cáo & Hệ thống (`/reports` & `/system`):** Bộ lọc báo cáo đa chiều, trích xuất dữ liệu CSV, in/lưu PDF chuẩn A4, backup/restore JSON có kiểm tra và công cụ Reset dữ liệu demo.
 
 ---
 

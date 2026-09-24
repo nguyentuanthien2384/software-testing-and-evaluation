@@ -13,6 +13,7 @@ const customJestConfig = {
     'src/lib/auth-server.ts',
     'src/lib/session.ts',
     'src/lib/app-data-validation.ts',
+    'src/lib/backup.ts',
     'src/lib/class-generation.ts',
     'src/lib/coefficient-copy.ts',
     'src/lib/numeric-input.ts',
