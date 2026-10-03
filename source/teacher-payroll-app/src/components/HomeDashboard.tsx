@@ -8,14 +8,18 @@ import {
 } from "@/lib/payroll";
 import { useAppData } from "@/lib/use-app-data";
 import { StatCard } from "./StatCard";
+import { AppDataStatus } from './AppDataStatus';
 
 export function HomeDashboard() {
-  const { data } = useAppData();
+  const { data, loaded, loadError, reloadData } = useAppData();
   const { lines: payrollLines, errors: payrollErrors } = calculateAllPayrollLinesSafely(data);
   const totalAmount = sumAmount(payrollLines);
 
+  if (!loaded) return <main className="page"><AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} /></main>;
+
   return (
     <main className="page" data-testid="dashboard-page">
+      <AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} />
       <div className="page-heading">
         <div>
           <p className="eyebrow">N01 - Nhóm 07</p>

@@ -70,6 +70,7 @@
           <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/auth/login" enabled="true">
             <stringProp name="HTTPSampler.path">/api/auth/login</stringProp>
             <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
             <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
             <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
               <collectionProp name="Arguments.arguments">
@@ -94,6 +95,7 @@
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/health" enabled="true">
           <stringProp name="HTTPSampler.path">/api/health</stringProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
           <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
         </HTTPSamplerProxy>
         <hashTree>
@@ -114,6 +116,7 @@
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/payroll" enabled="true">
           <stringProp name="HTTPSampler.path">/api/payroll</stringProp>
           <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
           <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
             <collectionProp name="Arguments.arguments">
@@ -126,16 +129,34 @@
           </elementProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert multiplicative payroll result" enabled="true">
-            <collectionProp name="Asserion.test_strings">
-              <stringProp name="convertedHours">&quot;convertedHours&quot;:${expectedConvertedHours}</stringProp>
-              <stringProp name="amount">&quot;amount&quot;:${expectedAmount}</stringProp>
-            </collectionProp>
-            <stringProp name="Assertion.custom_message">Payroll response did not match hours * subjectCoef * classCoef * rate * degreeCoef.</stringProp>
-            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
-            <boolProp name="Assertion.assume_success">false</boolProp>
-            <intProp name="Assertion.test_type">2</intProp>
-          </ResponseAssertion>
+          <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="Assert exact numeric payroll result" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script"><![CDATA[
+import groovy.json.JsonSlurper
+
+try {
+    def payload = new JsonSlurper().parseText(prev.getResponseDataAsString())
+    if (!(payload instanceof Map)) throw new IllegalArgumentException('Payroll response must be a JSON object.')
+    def expected = [
+        convertedHours: new BigDecimal(vars.get('expectedConvertedHours')),
+        amount: new BigDecimal(vars.get('expectedAmount'))
+    ]
+    expected.each { field, value ->
+        def actual = payload[field]
+        if (!(actual instanceof Number) || new BigDecimal(actual.toString()).compareTo(value) != 0) {
+            AssertionResult.setFailure(true)
+            AssertionResult.setFailureMessage("Payroll ${field}: expected numeric ${value}, received ${actual}.")
+        }
+    }
+} catch (Exception error) {
+    AssertionResult.setFailure(true)
+    AssertionResult.setFailureMessage('Invalid payroll JSON or expected numeric fixture: ' + error.message)
+}
+]]></stringProp>
+          </JSR223Assertion>
           <hashTree/>
           <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Duration threshold" enabled="true">
             <stringProp name="DurationAssertion.duration">${__P(maxResponseMs,2000)}</stringProp>
@@ -145,6 +166,7 @@
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /api/reports" enabled="true">
           <stringProp name="HTTPSampler.path">/api/reports</stringProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
           <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
         </HTTPSamplerProxy>
         <hashTree>

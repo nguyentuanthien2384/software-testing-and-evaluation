@@ -34,6 +34,19 @@ test('khôi phục phiên, phân quyền và hoàn tất trạng thái chờ', a
   expect(fetchMock).toHaveBeenCalledWith('/api/auth/session', { cache: 'no-store' });
 });
 
+test.each([
+  { username: 'admin', displayName: 'Admin', role: 'unknown' },
+  { username: 'admin', role: 'admin' },
+  { username: 1, displayName: 'Admin', role: 'admin' },
+  'admin'
+])('phản hồi phiên sai cấu trúc không được tạo trạng thái đăng nhập: %p', async (user) => {
+  fetchMock.mockResolvedValueOnce(mockResponse({ user }));
+  const hook = renderHook(() => useAuth(), { wrapper });
+  await waitFor(() => expect(hook.result.current.ready).toBe(true));
+  expect(hook.result.current.user).toBeNull();
+  expect(hook.result.current.can('data:view')).toBe(false);
+});
+
 test('phiên hết hạn đưa người dùng về trạng thái chưa đăng nhập', async () => {
   fetchMock.mockResolvedValueOnce(mockResponse({ user: null }, 401));
   const hook = renderHook(() => useAuth(), { wrapper });

@@ -301,19 +301,33 @@ Khi chạy bản production bằng `npm run start`, cần đặt `AUTH_SESSION_S
 
 ### 1. Kiểm thử Đơn vị & Độ bao phủ (Jest)
 
-Toàn bộ các hàm tính toán tiền dạy, kiểm tra tính hợp lệ của dữ liệu, thuật toán sinh mã lớp và kế thừa hệ số đều được bảo vệ bởi bộ Unit Test Jest.
+Bộ Jest gồm kiểm thử hàm nghiệp vụ, React/hook, hợp đồng API và tích hợp SQLite. Các ca hồi quy kiểm tra kết quả tính tay, tình huống biên, lỗi mạng, phiên hết hạn, xung đột phiên bản và rollback; test SQLite chạy đủ migration trên CSDL tạm trong thư mục hệ điều hành và dọn sau khi chạy.
 
 ```powershell
-# Chạy từ thư mục gốc
+# Unit, component và API với dependency được mock
 npm run test:unit
+
+# Repository và API với SQLite thật, độc lập prisma/dev.db
+npm run test:integration
+
+# Kiểm tra TypeScript + toàn bộ Jest/coverage + bộ chấm JMeter
+npm run qa:check
 
 # Xem báo cáo độ bao phủ chi tiết (Code Coverage)
 npm run coverage
 ```
 
-> **Độ bao phủ:** Chạy `npm run coverage` để xem tỷ lệ hiện tại của các module nghiệp vụ lõi. Báo cáo này được tính lại sau mỗi lần chạy thay vì sử dụng một tỷ lệ cố định trong tài liệu.
+> **Độ bao phủ:** Coverage tính toàn bộ `src/**/*.ts` và `src/**/*.tsx`, gồm API, component và page; chỉ loại test và file khai báo type. Báo cáo hiện tại nằm tại `source/teacher-payroll-app/coverage/index.html`, `coverage-summary.json` và `lcov.info`.
 
-Bộ kiểm thử đặt ngưỡng tối thiểu cho các module nghiệp vụ và hook: 90% câu lệnh, 85% nhánh, 95% hàm và 95% dòng. Lệnh `npm run coverage` sẽ báo lỗi khi tỷ lệ xuống dưới ngưỡng.
+Gate theo từng tầng (câu lệnh / nhánh / hàm / dòng):
+
+- Nghiệp vụ, repository và hook (`src/lib`): **90 / 85 / 95 / 95%**, giữ ngưỡng cũ.
+- API (`src/app/api`): **90 / 80 / 95 / 95%**.
+- React component (`src/components`): **80 / 75 / 80 / 85%**.
+
+Các page bọc component và layout vẫn hiện trong báo cáo coverage; chúng được xác minh thêm bằng build và Selenium, không áp gate unit riêng. Jest chỉ transpile TypeScript, vì vậy `typecheck` là bước độc lập bắt buộc trong CI. `npm test` và `npm run coverage` chạy cả tích hợp SQLite; `test:unit` và `test:integration` dùng để chạy riêng từng lớp.
+
+Test pass và coverage cao chưa chứng minh mọi tình huống vận hành đều đúng. Selenium hiện là smoke/regression trên dữ liệu demo; JMeter hiện đo ba API đọc/tính với tải cấu hình. Quy tắc khóa kỳ đang bảo vệ lớp và phân công, chưa đóng băng đơn giá/hệ số hoặc lưu bảng lương lịch sử đã chốt. Muốn nghiệm thu cơ chế chốt tiền bất biến cần bổ sung đặc tả và test riêng cho nghiệp vụ đó.
 
 ---
 
@@ -350,7 +364,7 @@ $env:BASE_URL="http://127.0.0.1:3000"; $env:BROWSER="chrome"; npm run test:junit
 
 ### 3. Kiểm thử Hiệu năng & Chịu tải (YC8 - Apache JMeter)
 
-Bộ kịch bản YC8 mô phỏng tải thực tế với **50 người dùng đồng thời (Virtual Users)**, thực hiện lặp 10 chu kỳ (**1.550 mẫu request**) nhắm vào các API trọng yếu: `/api/health`, `/api/payroll`, `/api/reports`.
+Bộ kịch bản YC8 mặc định tạo **50 luồng người dùng**, tăng dần trong 20 giây và lặp 10 chu kỳ (**1.550 mẫu request**) nhắm vào các API trọng yếu: `/api/health`, `/api/payroll`, `/api/reports`. Số luồng cấu hình không chứng minh số người dùng đồng thời: cần xem cột `allThreads` trong JTL. Muốn kiểm tra tải dồn, dùng ramp 1 giây và tăng số vòng lặp để các luồng tồn tại đồng thời.
 
 Hệ thống tích hợp công cụ kiểm định chất lượng hiệu năng tự động (**Performance Quality Gate** qua `check-thresholds.mjs`):
 - **Thời gian phản hồi trung bình (Average Response Time):** $\le 1000$ ms

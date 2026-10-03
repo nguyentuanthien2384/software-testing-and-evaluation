@@ -42,6 +42,24 @@ describe('API báo cáo', () => {
     expect(computeMock).toHaveBeenCalledWith(undefined);
   });
 
+  test.each(['', '2024', '2024-2024', '2024-2026', 'all', '2024-2025 OR 1=1'])(
+    'year không hợp lệ trả 400 và không đọc bảng lương: %j', async (year) => {
+      computeMock.mockResolvedValue([]);
+      const response = await GET(new Request(`http://localhost/api/reports?year=${encodeURIComponent(year)}`, {
+        headers: { cookie }
+      }));
+      expect(response.status).toBe(400);
+      expect(computeMock).not.toHaveBeenCalled();
+    }
+  );
+
+  test('trim year trước khi lọc để cùng một năm không bị báo cáo rỗng', async () => {
+    computeMock.mockResolvedValue([]);
+    const response = await GET(new Request('http://localhost/api/reports?year=%202024-2025%20', { headers: { cookie } }));
+    expect(response.status).toBe(200);
+    expect(computeMock).toHaveBeenCalledWith('2024-2025');
+  });
+
   test('dữ liệu hỏng được báo lỗi thay vì trả báo cáo thiếu dòng', async () => {
     computeMock.mockRejectedValue(new Error('broken reference'));
     const response = await GET(new Request('http://localhost/api/reports', { headers: { cookie } }));

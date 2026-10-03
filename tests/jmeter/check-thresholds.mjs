@@ -18,24 +18,68 @@ function parseCsvLine(line) {
   const cells = [];
   let current = '';
   let quoted = false;
+  let closedQuote = false;
   for (let i = 0; i < line.length; i += 1) {
     const char = line[i];
-    if (char === '"') {
-      if (quoted && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
+    if (quoted) {
+      if (char === '"') {
+        if (line[i + 1] === '"') {
+          current += '"';
+          i += 1;
+        } else {
+          quoted = false;
+          closedQuote = true;
+        }
       } else {
-        quoted = !quoted;
+        current += char;
       }
-    } else if (char === ',' && !quoted) {
+    } else if (char === ',') {
       cells.push(current);
       current = '';
+      closedQuote = false;
+    } else if (char === '"') {
+      if (current || closedQuote) throw new Error('CSV quotes must start at the beginning of a field.');
+      quoted = true;
     } else {
+      if (closedQuote) throw new Error('Unexpected characters after a quoted CSV field.');
       current += char;
     }
   }
+  if (quoted) throw new Error('Unclosed quoted CSV field.');
   cells.push(current);
   return cells;
+}
+
+function csvRecords(text) {
+  const records = [];
+  let quoted = false;
+  let current = '';
+  let line = 1;
+  let startLine = 1;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (char === '"') {
+      if (quoted && text[i + 1] === '"') {
+        current += '""';
+        i += 1;
+        continue;
+      }
+      quoted = !quoted;
+    }
+    if ((char === '\n' || char === '\r') && !quoted) {
+      if (current.trim()) records.push({ text: current, line: startLine });
+      current = '';
+      if (char === '\r' && text[i + 1] === '\n') i += 1;
+      line += 1;
+      startLine = line;
+    } else {
+      current += char;
+      if (char === '\n' || (char === '\r' && text[i + 1] !== '\n')) line += 1;
+    }
+  }
+  if (quoted) throw new Error(`Unclosed quoted CSV field at line ${startLine}.`);
+  if (current.trim()) records.push({ text: current, line: startLine });
+  return records;
 }
 
 function percentile(sortedValues, percentileValue) {
@@ -48,10 +92,20 @@ function summarize(samples, durationSeconds) {
   const failed = samples.filter((sample) => !sample.success).length;
   return {
     samples: samples.length,
-    avgMs: Number(avg.toFixed(2)),
+    avgMs: avg,
     p95Ms: percentile(elapsedValues, 0.95),
-    errorRatePercent: Number(((failed / samples.length) * 100).toFixed(2)),
-    throughputPerSecond: Number((samples.length / durationSeconds).toFixed(2))
+    errorRatePercent: (failed / samples.length) * 100,
+    throughputPerSecond: samples.length / durationSeconds
+  };
+}
+
+function displayMetrics(metrics) {
+  if (!metrics) return null;
+  return {
+    ...metrics,
+    avgMs: Number(metrics.avgMs.toFixed(2)),
+    errorRatePercent: Number(metrics.errorRatePercent.toFixed(2)),
+    throughputPerSecond: Number(metrics.throughputPerSecond.toFixed(2))
   };
 }
 
@@ -104,14 +158,30 @@ if (!fs.existsSync(resultFile)) {
   process.exit(2);
 }
 
-const lines = fs.readFileSync(resultFile, 'utf8').trim().split(/\r?\n/).filter(Boolean);
+let lines;
+try {
+  lines = csvRecords(fs.readFileSync(resultFile, 'utf8'));
+} catch (error) {
+  console.error(`Invalid JTL CSV: ${error.message}`);
+  process.exit(2);
+}
 if (lines.length < 2) {
   console.error(`JMeter result file has no samples: ${resultFile}`);
   process.exit(2);
 }
 
-const headers = parseCsvLine(lines[0]);
+let headers;
+try {
+  headers = parseCsvLine(lines[0].text);
+} catch (error) {
+  console.error(`Invalid JTL header: ${error.message}`);
+  process.exit(2);
+}
 headers[0] = headers[0].replace(/^\uFEFF/, '');
+if (headers.some((header) => !header.trim()) || new Set(headers).size !== headers.length) {
+  console.error('Invalid JTL header: empty or duplicate column names.');
+  process.exit(2);
+}
 const index = Object.fromEntries(headers.map((header, i) => [header, i]));
 const requiredColumns = ['timeStamp', 'elapsed', 'label', 'success'];
 for (const column of requiredColumns) {
@@ -121,25 +191,46 @@ for (const column of requiredColumns) {
   }
 }
 
-const samples = lines.slice(1).map(parseCsvLine).map((row) => ({
-  timeStamp: Number(row[index.timeStamp]),
-  elapsed: Number(row[index.elapsed]),
-  label: row[index.label]?.trim() ?? '',
-  success: row[index.success] === 'true'
-})).filter((sample) => (
-  Number.isFinite(sample.timeStamp)
-  && Number.isFinite(sample.elapsed)
-  && sample.elapsed >= 0
-  && sample.label.length > 0
-));
+const samples = [];
+for (const line of lines.slice(1)) {
+  try {
+    const row = parseCsvLine(line.text);
+    const timeStampText = row[index.timeStamp]?.trim() ?? '';
+    const elapsedText = row[index.elapsed]?.trim() ?? '';
+    const sample = {
+      timeStamp: Number(timeStampText),
+      elapsed: Number(elapsedText),
+      label: row[index.label]?.trim() ?? '',
+      success: row[index.success] === 'true'
+    };
+    if (
+      row.length !== headers.length || !timeStampText || !elapsedText
+      || !Number.isFinite(sample.timeStamp) || sample.timeStamp < 0
+      || !Number.isFinite(sample.elapsed) || sample.elapsed < 0
+      || !sample.label || !['true', 'false'].includes(row[index.success])
+      || !Number.isFinite(sample.timeStamp + sample.elapsed)
+      || Math.abs(sample.timeStamp + sample.elapsed) > 8.64e15
+    ) throw new Error('Invalid fields.');
+    samples.push(sample);
+  } catch (error) {
+    console.error(`Invalid JTL sample at line ${line.line}: ${error.message}`);
+    process.exit(2);
+  }
+}
 
 if (samples.length === 0) {
   console.error('No valid JMeter samples found.');
   process.exit(2);
 }
 
-const firstStart = Math.min(...samples.map((sample) => sample.timeStamp));
-const latestEnd = Math.max(...samples.map((sample) => sample.timeStamp + sample.elapsed));
+// Avoid spreading a large load-run artifact into function arguments.
+const firstStart = samples.reduce((minimum, sample) => Math.min(minimum, sample.timeStamp), Infinity);
+const latestEnd = samples.reduce((maximum, sample) => Math.max(maximum, sample.timeStamp + sample.elapsed), -Infinity);
+// Allow one minute of clock skew between the runner and the JMeter host.
+if (latestEnd > Date.now() + 60_000) {
+  console.error('JMeter artifact contains samples in the future.');
+  process.exit(2);
+}
 const durationSeconds = Math.max((latestEnd - firstStart) / 1000, 0.001);
 const artifactAgeMinutes = (Date.now() - latestEnd) / 60000;
 const aggregate = summarize(samples, durationSeconds);
@@ -162,13 +253,13 @@ const expectedLabelCounts = Object.fromEntries(requiredLabels.map((label) => [
 const expectedSamples = Object.values(expectedLabelCounts).reduce((sum, value) => sum + value, 0);
 
 const summary = {
-  ...aggregate,
+  ...displayMetrics(aggregate),
   durationSeconds: Number(durationSeconds.toFixed(3)),
   latestSampleAt: new Date(latestEnd).toISOString(),
   artifactAgeMinutes: Number(artifactAgeMinutes.toFixed(2)),
   expectedSamples,
   expectedLabelCounts,
-  endpointMetrics,
+  endpointMetrics: Object.fromEntries(Object.entries(endpointMetrics).map(([label, metrics]) => [label, displayMetrics(metrics)])),
   thresholds: {
     maxAverage,
     maxP95,

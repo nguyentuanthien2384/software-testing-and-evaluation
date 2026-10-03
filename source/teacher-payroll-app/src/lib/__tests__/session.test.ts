@@ -1,4 +1,5 @@
 import { createSessionToken, expiredSessionCookie, readSessionUser, requirePermission, SESSION_COOKIE, SessionConfigurationError, sessionCookie, verifySessionToken } from '../session';
+import { createHmac } from 'node:crypto';
 
 const admin = { username: 'admin', displayName: 'Quản trị viên', role: 'admin' as const };
 const tester = { username: 'tester', displayName: 'Kiểm thử viên', role: 'tester' as const };
@@ -20,6 +21,10 @@ describe('phiên đăng nhập phía máy chủ', () => {
     expect(verifySessionToken(`${token.slice(0, -1)}x`)).toBeNull();
   });
 
+  test.each(['.', '..ignored', '.unexpected', '...'])('từ chối token có phần thừa %s', (suffix) => {
+    expect(verifySessionToken(`${createSessionToken(admin)}${suffix}`)).toBeNull();
+  });
+
   test('từ chối token hết hạn', () => {
     const token = createSessionToken(admin, 1_000);
     expect(verifySessionToken(token, 1_000 + 8 * 60 * 60 * 1000 - 1)).toEqual(admin);
@@ -35,6 +40,52 @@ describe('phiên đăng nhập phía máy chủ', () => {
     const denied = requirePermission(request, 'data:view');
     expect(denied).toBeInstanceOf(Response);
     if (denied instanceof Response) expect(denied.status).toBe(401);
+  });
+
+  test.each(['', 'only-payload', '.', 'payload.signature.extra'])('token sai cấu trúc bị từ chối: %j', (token) => {
+    expect(verifySessionToken(token)).toBeNull();
+  });
+
+  test.each([
+    '{broken-json',
+    'null',
+    JSON.stringify({ ...admin, expiresAt: 'tomorrow' }),
+    JSON.stringify({ ...admin, expiresAt: Number.MAX_SAFE_INTEGER, role: 'superadmin' }),
+    JSON.stringify({ ...admin, expiresAt: Number.MAX_SAFE_INTEGER, username: 123 }),
+    JSON.stringify({ ...admin, expiresAt: Number.MAX_SAFE_INTEGER, displayName: null })
+  ])('payload có chữ ký đúng nhưng JSON/schema sai vẫn bị từ chối: %j', (payload) => {
+    const previousSecret = process.env.AUTH_SESSION_SECRET;
+    try {
+      process.env.AUTH_SESSION_SECRET = 'test-only-secret-for-invalid-payloads';
+      const encoded = Buffer.from(payload).toString('base64url');
+      const signature = createHmac('sha256', process.env.AUTH_SESSION_SECRET).update(encoded).digest('base64url');
+      expect(verifySessionToken(`${encoded}.${signature}`)).toBeNull();
+    } finally {
+      if (previousSecret === undefined) delete process.env.AUTH_SESSION_SECRET;
+      else process.env.AUTH_SESSION_SECRET = previousSecret;
+    }
+  });
+
+  test('đổi secret vô hiệu hóa token cũ', () => {
+    const previousSecret = process.env.AUTH_SESSION_SECRET;
+    try {
+      process.env.AUTH_SESSION_SECRET = 'test-only-original-session-secret';
+      const token = createSessionToken(admin);
+      process.env.AUTH_SESSION_SECRET = 'test-only-rotated-session-secret';
+      expect(verifySessionToken(token)).toBeNull();
+      expect(verifySessionToken(createSessionToken(admin))).toEqual(admin);
+    } finally {
+      if (previousSecret === undefined) delete process.env.AUTH_SESSION_SECRET;
+      else process.env.AUTH_SESSION_SECRET = previousSecret;
+    }
+  });
+
+  test('đọc đúng cookie giữa các cookie khác và bỏ qua mục không có dấu bằng', () => {
+    const token = createSessionToken(tester);
+    const request = new Request('http://localhost/api/state', {
+      headers: { cookie: `unrelated=1; malformed; ${SESSION_COOKIE}=${encodeURIComponent(token)}; tail=2` }
+    });
+    expect(readSessionUser(request)).toEqual(tester);
   });
 
   test('cookie phiên dùng HttpOnly và chỉ gắn Secure trên HTTPS', () => {

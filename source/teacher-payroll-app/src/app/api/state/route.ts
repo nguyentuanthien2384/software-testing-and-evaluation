@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { getAllData, replaceAllData } from '@/lib/repository';
+import { getAllData, withStateTransaction } from '@/lib/repository';
 import { initialData } from '@/lib/initial-data';
 import { validateAppData, validateLockedSemesterTransition, validateTeacherAssignmentTransition } from '@/lib/app-data-validation';
 import { userCan } from '@/lib/auth';
@@ -57,8 +57,7 @@ export async function PUT(request: Request) {
       return Response.json({ ok: false, error: 'Thiếu phiên bản dữ liệu. Hãy tải lại trang.' }, { status: 428 });
     }
 
-    return await runWriteExclusively(async () => {
-      const current = await currentState();
+    return await runWriteExclusively(() => withStateTransaction(async (current, save) => {
       if (createStateVersion(current) !== expectedVersion) {
         return Response.json(
           { ok: false, error: 'Dữ liệu đã được thay đổi ở nơi khác. Hãy tải lại trang trước khi lưu.' },
@@ -79,10 +78,10 @@ export async function PUT(request: Request) {
           );
         }
       }
-      await replaceAllData(validation.data);
+      await save(validation.data);
       const nextVersion = createStateVersion(validation.data);
       return Response.json({ ok: true }, { headers: { [VERSION_HEADER]: nextVersion } });
-    });
+    }));
   } catch {
     return Response.json({ ok: false, error: 'Không thể lưu dữ liệu vào cơ sở dữ liệu.' }, { status: 500 });
   }

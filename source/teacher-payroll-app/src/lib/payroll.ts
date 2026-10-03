@@ -16,6 +16,24 @@ export function assertPositiveNumber(value: number, fieldName: string): void {
   }
 }
 
+/** Multiply input decimals exactly, then round halves up at the payroll boundary. */
+function multiplyAndRound(values: number[], digits: number): number {
+  let coefficient = BigInt(1);
+  let exponent = 0;
+  for (const value of values) {
+    const [decimal, scientificExponent = '0'] = value.toString().split('e');
+    const [whole, fraction = ''] = decimal.split('.');
+    coefficient *= BigInt(`${whole}${fraction}`);
+    exponent += Number(scientificExponent) - fraction.length;
+  }
+
+  const removedPlaces = -digits - exponent;
+  if (removedPlaces <= 0) return Number(`${coefficient}e${exponent}`);
+  const divisor = BigInt(10) ** BigInt(removedPlaces);
+  const rounded = (coefficient + divisor / BigInt(2)) / divisor;
+  return Number(`${rounded}e${-digits}`);
+}
+
 export function calculateTeachingPay(input: PayrollInput): PayrollResult {
   assertPositiveNumber(input.hours, 'Số tiết');
   assertPositiveNumber(input.subjectCoef, 'Hệ số học phần');
@@ -23,13 +41,16 @@ export function calculateTeachingPay(input: PayrollInput): PayrollResult {
   assertPositiveNumber(input.rate, 'Định mức');
   assertPositiveNumber(input.degreeCoef, 'Hệ số bằng cấp');
 
-  const convertedHours = round(input.hours * input.subjectCoef * input.classCoef, 2);
+  const convertedHours = multiplyAndRound([input.hours, input.subjectCoef, input.classCoef], 2);
   if (!Number.isFinite(convertedHours) || convertedHours <= 0) {
     throw new Error('Tiết quy đổi phải là số lớn hơn 0.');
   }
-  const amount = round(convertedHours * input.rate * input.degreeCoef, 0);
+  const amount = multiplyAndRound([convertedHours, input.rate, input.degreeCoef], 0);
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error('Thành tiền phải là số lớn hơn 0.');
+  }
+  if (!Number.isSafeInteger(amount)) {
+    throw new Error('Thành tiền vượt quá giới hạn số nguyên an toàn.');
   }
   return { convertedHours, amount };
 }

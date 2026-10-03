@@ -63,6 +63,11 @@ jmeter \
 - Mỗi API/login cũng phải đạt riêng các ngưỡng average, P95 và error rate ở trên
 - Kết quả phải có đủ bốn nhãn và đúng số mẫu của cấu hình users/loops
 - Mẫu cuối cùng không được cũ quá 60 phút
+- Không chấp nhận cột trùng, dòng sai cấu trúc, dữ liệu số trống hay trạng thái success không phải true/false
+- Không chấp nhận thời điểm kết thúc vượt quá một phút trong tương lai (cho phép lệch đồng hồ nhỏ)
+
+Gate so sánh chỉ số chưa làm tròn với ngưỡng; số làm tròn hai chữ số chỉ dùng để
+hiển thị. Kiểm thử bộ chấm không phụ thuộc cấu hình tải trong biến môi trường.
 
 Với cấu hình mặc định 50 users × 10 loops, gate yêu cầu đúng 1.550 mẫu:
 50 lần đăng nhập và 500 mẫu cho từng API health, payroll, reports. Thời lượng dùng để
@@ -79,11 +84,28 @@ MAX_AVERAGE_MS=800 MAX_P95_MS=1500 MAX_ERROR_RATE=0.5 MIN_THROUGHPUT=20 bash tes
 Có thể đổi thời hạn của artifact bằng `MAX_ARTIFACT_AGE_MINUTES`. Đặt giá trị này
 bằng `0` chỉ khi cần chấm lại một artifact lịch sử có chủ đích.
 
+Để kiểm tra tải đồng thời cao hơn baseline, chạy `JMETER_USERS=50 JMETER_RAMP=1
+JMETER_LOOPS=100 bash tests/jmeter/run-yc8.sh`. Xác minh đỉnh `allThreads` trong JTL;
+50 luồng tạo trong 20 giây có thể lần lượt hoàn tất trước khi luồng kế tiếp chạy.
+Parser hỗ trợ field CSV được quote chứa dấu phẩy, dấu nháy kép và nhiều dòng.
+HTTP keep-alive được bật để các luồng tái sử dụng kết nối, tránh hết cổng tạm trên
+máy phát tải khi mỗi request tạo một kết nối mới.
+
 Kiểm thử riêng bộ chấm ngưỡng (không khởi động app và không chạy tải):
 
 ```bash
 npm run test:jmeter-checker
 ```
+
+Kiểm định assertion của cả hai JMX bằng JMeter thật và HTTP fixture (cần Java,
+JMeter; đặt `JMETER_HOME` nếu không dùng bản trong `tools/apache-jmeter-5.6.3`):
+
+```bash
+npm run test:jmeter-assertions
+```
+
+Các fixture xác minh tiền sai gấp 10 lần, số tiết sai phần thập phân, numeric
+string, thiếu trường và JSON hỏng đều fail; numeric JSON đúng vẫn pass.
 
 ## Kết quả đầu ra
 

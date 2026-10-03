@@ -77,6 +77,38 @@ beforeEach(() => {
   mockData();
 });
 
+test.each([
+  { loaded: false, saving: false, loadError: '' },
+  { loaded: true, saving: true, loadError: '' },
+  { loaded: true, saving: false, loadError: 'Mất mạng. Chỉ đọc.' }
+])('khóa thêm/sửa/xóa khi dữ liệu chưa sẵn sàng hoặc đang lưu: %p', (status) => {
+  mockData(initialData, status);
+  const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true);
+  renderTeachers();
+  const edit = screen.getByTestId('teachers-edit-GV0008') as HTMLButtonElement;
+  const remove = screen.getByTestId('teachers-delete-GV0008') as HTMLButtonElement;
+  expect(edit.disabled).toBe(true);
+  expect(remove.disabled).toBe(true);
+  expect((screen.getByTestId('teachers-new-button') as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(remove);
+  expect(confirm).not.toHaveBeenCalled();
+  expect(removeItem).not.toHaveBeenCalled();
+  confirm.mockRestore();
+});
+
+test('bấm xóa nhiều lần khi API chưa trả về chỉ gửi một lần', async () => {
+  mockData({ ...initialData, assignments: initialData.assignments.filter((assignment) => assignment.teacherId !== 'GV0008') });
+  let finishSave!: (result: { ok: true }) => void;
+  removeItem.mockImplementationOnce(() => new Promise((resolve) => { finishSave = resolve; }));
+  const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true);
+  renderTeachers();
+  fireEvent.click(screen.getByTestId('teachers-delete-GV0008'));
+  fireEvent.click(screen.getByTestId('teachers-delete-GV0008'));
+  expect(removeItem).toHaveBeenCalledTimes(1);
+  await act(async () => { finishSave({ ok: true }); });
+  confirm.mockRestore();
+});
+
 test('tạo giáo viên bằng mã tiếp theo và lưu các giá trị đã chuẩn hóa', async () => {
   renderTeachers();
   expect((screen.getByTestId('field-id') as HTMLInputElement).value).toBe('GV0009');

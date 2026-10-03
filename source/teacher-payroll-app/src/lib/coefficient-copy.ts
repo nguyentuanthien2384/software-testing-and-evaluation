@@ -6,9 +6,10 @@ export type CoefficientCopyResult =
   | { ok: false; error: string };
 
 export function nextAcademicYear(year: string): string {
-  const match = /^(\d{4})-(\d{4})$/.exec(year);
-  if (!match) return '';
-  return `${Number(match[1]) + 1}-${Number(match[2]) + 1}`;
+  if (!isValidAcademicYear(year)) return '';
+  const [start, end] = year.split('-').map(Number);
+  if (end >= 9999) return '';
+  return `${String(start + 1).padStart(4, '0')}-${String(end + 1).padStart(4, '0')}`;
 }
 
 /** Sao chép trọn bộ hệ số bằng cấp sang đúng năm học kế tiếp. */
@@ -35,8 +36,9 @@ export function copyDegreeCoefficients(
     id: `DCOEF-${startYear}-${String(index + 1).padStart(3, '0')}`,
     year: targetYear
   }));
-  const existingIds = new Set(data.degreeCoefficients.map((item) => item.id));
-  if (coefficients.some((item) => existingIds.has(item.id))) {
+  const normalizedId = (id: string) => id.trim().toLocaleLowerCase('vi');
+  const existingIds = new Set(data.degreeCoefficients.map((item) => normalizedId(item.id)));
+  if (coefficients.some((item) => existingIds.has(normalizedId(item.id)))) {
     return { ok: false, error: 'Mã hệ số tự sinh đã tồn tại. Hãy kiểm tra dữ liệu năm đích.' };
   }
   return { ok: true, coefficients };

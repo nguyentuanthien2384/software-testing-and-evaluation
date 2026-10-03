@@ -50,7 +50,10 @@ function enterManualValues(values: ManualValues) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockedUseAppData.mockReturnValue({ data: EMPTY_DATA } as ReturnType<typeof useAppData>);
+  mockedUseAppData.mockReturnValue({
+    data: EMPTY_DATA, loaded: true, saving: false, loadError: '', reloadData: jest.fn(),
+    addItem: jest.fn(), addItems: jest.fn(), updateItem: jest.fn(), removeItem: jest.fn(), resetData: jest.fn(), restoreData: jest.fn()
+  });
 });
 
 describe('PayrollCalculationPage - ràng buộc trường số', () => {

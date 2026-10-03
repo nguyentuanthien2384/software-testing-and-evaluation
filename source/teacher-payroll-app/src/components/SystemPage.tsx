@@ -4,24 +4,36 @@ import { ChangeEvent, useRef, useState } from 'react';
 import { createBackup, parseBackup } from '@/lib/backup';
 import { useAppData } from '@/lib/use-app-data';
 import { useAuth } from '@/lib/use-auth';
+import { AppDataStatus } from './AppDataStatus';
 
 const MAX_BACKUP_SIZE = 5 * 1024 * 1024;
 
 export function SystemPage() {
-  const { data, resetData, restoreData, saving } = useAppData();
+  const { data, resetData, restoreData, saving, loaded, loadError, reloadData } = useAppData();
   const { can } = useAuth();
   const canReset = can('system:reset');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState('');
   const [restoring, setRestoring] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const operationPending = useRef(false);
 
   async function handleReset() {
+    if (!canReset || !loaded || loadError || saving || operationPending.current) return;
     if (!confirm('Reset toàn bộ dữ liệu demo?')) return;
-    const result = await resetData();
-    setMessage(result.ok ? 'Đã khôi phục dữ liệu mẫu trong cơ sở dữ liệu.' : result.error);
+    operationPending.current = true;
+    setResetting(true);
+    try {
+      const result = await resetData();
+      setMessage(result.ok ? 'Đã khôi phục dữ liệu mẫu trong cơ sở dữ liệu.' : result.error);
+    } finally {
+      operationPending.current = false;
+      setResetting(false);
+    }
   }
 
   function handleExport() {
+    if (!canReset || !loaded || loadError || saving || operationPending.current) return;
     const blob = new Blob([createBackup(data)], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -35,6 +47,7 @@ export function SystemPage() {
   async function handleImport(event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = '';
+    if (!canReset || !loaded || loadError || saving || operationPending.current) return;
     if (!file) return;
     if (file.size > MAX_BACKUP_SIZE) {
       setMessage('File backup vượt quá giới hạn 5 MB.');
@@ -42,6 +55,7 @@ export function SystemPage() {
     }
     if (!confirm('Khôi phục sẽ ghi đè toàn bộ dữ liệu hiện tại. Bạn có muốn tiếp tục?')) return;
 
+    operationPending.current = true;
     setRestoring(true);
     try {
       const validation = parseBackup(await file.text());
@@ -54,14 +68,16 @@ export function SystemPage() {
     } catch {
       setMessage('Không thể đọc file backup.');
     } finally {
+      operationPending.current = false;
       setRestoring(false);
     }
   }
 
-  const busy = saving || restoring;
+  const busy = saving || restoring || resetting || !loaded || Boolean(loadError);
 
   return (
     <main className="page">
+      <AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} />
       <div className="page-heading compact">
         <div>
           <p className="eyebrow">Hệ thống</p>
@@ -82,6 +98,7 @@ export function SystemPage() {
               ref={fileInputRef}
               data-testid="system-import-input"
               type="file"
+              disabled={busy}
               accept="application/json,.json"
               onChange={(event) => void handleImport(event)}
               style={{ display: 'none' }}

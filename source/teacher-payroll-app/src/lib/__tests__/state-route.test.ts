@@ -1,5 +1,5 @@
 import { GET, PUT } from '../../app/api/state/route';
-import { getAllData, replaceAllData } from '../repository';
+import { getAllData, replaceAllData, withStateTransaction } from '../repository';
 import { initialData } from '../initial-data';
 import { createSessionToken, SESSION_COOKIE } from '../session';
 import { createStateVersion } from '../state-version';
@@ -7,7 +7,8 @@ import type { AppData } from '../types';
 
 jest.mock('../repository', () => ({
   getAllData: jest.fn(),
-  replaceAllData: jest.fn()
+  replaceAllData: jest.fn(),
+  withStateTransaction: jest.fn()
 }));
 
 const getAllDataMock = getAllData as jest.MockedFunction<typeof getAllData>;
@@ -36,6 +37,8 @@ describe('API state', () => {
     stored = structuredClone(initialData);
     getAllDataMock.mockImplementation(async () => structuredClone(stored));
     replaceAllDataMock.mockImplementation(async (next) => { stored = structuredClone(next); });
+    (withStateTransaction as jest.Mock).mockImplementation(async (operation) =>
+      operation(structuredClone(stored), replaceAllDataMock));
   });
 
   test('GET trả snapshot và phiên bản tương ứng', async () => {

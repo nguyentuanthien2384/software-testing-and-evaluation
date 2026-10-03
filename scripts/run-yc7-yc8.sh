@@ -24,6 +24,9 @@ trap cleanup EXIT
 
 cd "$APP_DIR"
 npm ci
+npm run typecheck
+npm run coverage -- --runInBand
+node --test "$PROJECT_ROOT/tests/jmeter/check-thresholds.test.mjs"
 
 # The combined local QA command must never mutate prisma/dev.db. Build a fresh,
 # disposable database unless the caller deliberately supplies QA_DATABASE_URL.

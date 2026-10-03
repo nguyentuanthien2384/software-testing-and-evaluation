@@ -85,7 +85,7 @@ test('bỏ cache hỏng và không coi dữ liệu thiếu phiên bản là có 
   fetchMock.mockResolvedValueOnce(mockResponse({ ...initialData, teachers: [] }));
   const hook = renderHook(() => useAppData());
   await waitFor(() => expect(hook.result.current.loaded).toBe(true));
-  expect(hook.result.current.data.teachers).toHaveLength(initialData.teachers.length);
+  expect(hook.result.current.data.teachers).toHaveLength(0);
   expect(hook.result.current.loadError).toContain('không trả phiên bản dữ liệu');
   expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').teachers).toBeNull();
   await act(async () => {
@@ -94,11 +94,11 @@ test('bỏ cache hỏng và không coi dữ liệu thiếu phiên bản là có 
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
-test('dữ liệu máy chủ sai cấu trúc không thay thế bản đang hiển thị và không được đưa vào cache', async () => {
+test('dữ liệu máy chủ sai cấu trúc không được đưa vào cache hay thay bằng số liệu mẫu', async () => {
   fetchMock.mockResolvedValueOnce(mockResponse({ ...initialData, teachers: null }, 200, 'version-1'));
   const hook = renderHook(() => useAppData());
   await waitFor(() => expect(hook.result.current.loaded).toBe(true));
-  expect(hook.result.current.data).toEqual(initialData);
+  expect(Object.values(hook.result.current.data).every((rows) => rows.length === 0)).toBe(true);
   expect(hook.result.current.loadError).toContain('Dữ liệu từ máy chủ không hợp lệ');
   expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
   await act(async () => {
@@ -111,7 +111,7 @@ test('phản hồi máy chủ thiếu danh mục không được ghép âm thầ
   fetchMock.mockResolvedValueOnce(mockResponse({ teachers: [] }, 200, 'version-1'));
   const hook = renderHook(() => useAppData());
   await waitFor(() => expect(hook.result.current.loaded).toBe(true));
-  expect(hook.result.current.data).toEqual(initialData);
+  expect(Object.values(hook.result.current.data).every((rows) => rows.length === 0)).toBe(true);
   expect(hook.result.current.loadError).toContain('Dữ liệu từ máy chủ không hợp lệ');
   expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
 });
@@ -121,9 +121,30 @@ test('cache thiếu danh mục bị bỏ qua khi mất kết nối', async () =>
   fetchMock.mockRejectedValueOnce(new Error('Mất mạng'));
   const hook = renderHook(() => useAppData());
   await waitFor(() => expect(hook.result.current.loaded).toBe(true));
-  expect(hook.result.current.data).toEqual(initialData);
+  expect(Object.values(hook.result.current.data).every((rows) => rows.length === 0)).toBe(true);
   expect(hook.result.current.loadError).toContain('Mất mạng');
   expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+test('localStorage bị chặn không làm mất snapshot đã xác nhận trong bộ nhớ khi tải lại offline', async () => {
+  const setCache = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('Storage disabled'); });
+  const getCache = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('Storage disabled'); });
+  const remote: AppData = { ...initialData, paymentRates: initialData.paymentRates.map((rate) => ({ ...rate, amount: rate.amount + 3000 })) };
+  try {
+    fetchMock.mockResolvedValueOnce(mockResponse(remote, 200, 'version-1')).mockRejectedValueOnce(new Error('Mất mạng'));
+    const hook = renderHook(() => useAppData());
+    await waitFor(() => expect(hook.result.current.loaded).toBe(true));
+    expect(hook.result.current.data).toEqual(remote);
+    expect(hook.result.current.loadError).toBe('');
+    await act(async () => { await hook.result.current.reloadData(); });
+    expect(hook.result.current.data).toEqual(remote);
+    expect(hook.result.current.loadError).toContain('bản sao gần nhất');
+    await act(async () => { expect(await hook.result.current.resetData()).toMatchObject({ ok: false }); });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  } finally {
+    setCache.mockRestore();
+    getCache.mockRestore();
+  }
 });
 
 test('xung đột khi lưu giữ nguyên dữ liệu và cache, trả dấu hiệu để giao diện tải lại', async () => {
@@ -222,6 +243,65 @@ test('thiếu phiên bản mới trong phản hồi ghi buộc tải lại, khô
     });
   });
   expect(hook.result.current.data).toEqual(initialData);
+  await act(async () => {
+    expect(await hook.result.current.resetData()).toMatchObject({ ok: false });
+  });
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  expect(hook.result.current.loadError).toContain('Hãy tải lại');
+});
+
+test('phản hồi tải cũ tới sau không ghi đè dữ liệu và phiên bản của lần tải mới', async () => {
+  let finishOld!: (response: Response) => void;
+  const newer: AppData = { ...initialData, paymentRates: initialData.paymentRates.map((rate) => ({ ...rate, amount: rate.amount + 1000 })) };
+  fetchMock
+    .mockImplementationOnce(() => new Promise<Response>((resolve) => { finishOld = resolve; }))
+    .mockResolvedValueOnce(mockResponse(newer, 200, 'version-new'))
+    .mockResolvedValueOnce(mockResponse({ ok: true }, 200, 'version-saved'));
+  const hook = renderHook(() => useAppData());
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  await act(async () => { await hook.result.current.reloadData(); });
+  await act(async () => { finishOld(mockResponse(initialData, 200, 'version-old')); });
+  expect(hook.result.current.data).toEqual(newer);
+  expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual(newer);
+  await act(async () => { await hook.result.current.resetData(); });
+  expect(fetchMock.mock.calls[2][1].headers['X-State-Version']).toBe('version-new');
+});
+
+test('lỗi của lần tải cũ không chuyển lần tải mới thành chế độ chỉ đọc', async () => {
+  let failOld!: (error: Error) => void;
+  fetchMock
+    .mockImplementationOnce(() => new Promise<Response>((_resolve, reject) => { failOld = reject; }))
+    .mockResolvedValueOnce(mockResponse(initialData, 200, 'version-new'));
+  const hook = renderHook(() => useAppData());
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  await act(async () => { await hook.result.current.reloadData(); });
+  await act(async () => { failOld(new Error('request cũ mất mạng')); });
+  expect(hook.result.current.loadError).toBe('');
+  expect(hook.result.current.loaded).toBe(true);
+});
+
+test('tải lại chờ thao tác ghi hoàn tất và không cho lưu bằng phiên bản cũ trong lúc tải', async () => {
+  let finishSave!: (response: Response) => void;
+  let finishReload!: (response: Response) => void;
+  const saved: AppData = { ...initialData, paymentRates: initialData.paymentRates.map((rate) => ({ ...rate, amount: rate.amount + 1000 })) };
+  fetchMock
+    .mockResolvedValueOnce(mockResponse(initialData, 200, 'version-1'))
+    .mockImplementationOnce(() => new Promise<Response>((resolve) => { finishSave = resolve; }))
+    .mockImplementationOnce(() => new Promise<Response>((resolve) => { finishReload = resolve; }));
+  const hook = renderHook(() => useAppData());
+  await waitFor(() => expect(hook.result.current.loaded).toBe(true));
+  let mutation!: ReturnType<typeof hook.result.current.restoreData>;
+  let reload!: Promise<void>;
+  act(() => { mutation = hook.result.current.restoreData(saved); });
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  act(() => { reload = hook.result.current.reloadData(); });
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  await act(async () => { finishSave(mockResponse({ ok: true }, 200, 'version-2')); await mutation; });
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+  await act(async () => { expect(await hook.result.current.resetData()).toMatchObject({ ok: false }); });
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+  await act(async () => { finishReload(mockResponse(saved, 200, 'version-2')); await reload; });
+  expect(hook.result.current.data).toEqual(saved);
 });
 
 test('thêm nhiều giáo viên, cập nhật định mức và xoá khoa dùng đúng dữ liệu mới nhất', async () => {

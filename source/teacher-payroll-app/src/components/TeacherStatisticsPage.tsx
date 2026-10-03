@@ -4,9 +4,10 @@ import { useMemo, useState } from 'react';
 import { getAge } from '@/lib/payroll';
 import { useAppData } from '@/lib/use-app-data';
 import { StatCard } from './StatCard';
+import { AppDataStatus } from './AppDataStatus';
 
 export function TeacherStatisticsPage() {
-  const { data } = useAppData();
+  const { data, loaded, loadError, reloadData } = useAppData();
   const [departmentId, setDepartmentId] = useState('');
   const [degreeId, setDegreeId] = useState('');
 
@@ -25,8 +26,11 @@ export function TeacherStatisticsPage() {
     count: filteredTeachers.filter((teacher) => teacher.degreeId === degree.id).length
   })).filter((item) => item.count > 0);
 
+  if (!loaded) return <main className="page"><AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} /></main>;
+
   return (
     <main className="page">
+      <AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} />
       <div className="page-heading compact">
         <div>
           <p className="eyebrow">UC1.4</p>

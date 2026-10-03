@@ -3,9 +3,10 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '@/lib/use-app-data';
 import { StatCard } from './StatCard';
+import { AppDataStatus } from './AppDataStatus';
 
 export function ClassStatisticsPage() {
-  const { data } = useAppData();
+  const { data, loaded, loadError, reloadData } = useAppData();
   const [semesterId, setSemesterId] = useState('');
   const [subjectId, setSubjectId] = useState('');
 
@@ -24,8 +25,11 @@ export function ClassStatisticsPage() {
     .map((subject) => ({ name: subject.name, count: rows.filter((item) => item.subjectId === subject.id).length }))
     .filter((item) => item.count > 0);
 
+  if (!loaded) return <main className="page"><AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} /></main>;
+
   return (
     <main className="page" data-testid="class-statistics-page">
+      <AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} />
       <div className="page-heading compact">
         <div>
           <p className="eyebrow">UC2.5</p>

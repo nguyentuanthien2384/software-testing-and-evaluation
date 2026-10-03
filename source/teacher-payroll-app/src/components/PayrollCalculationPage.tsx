@@ -4,9 +4,10 @@ import { KeyboardEvent, useMemo, useRef, useState } from 'react';
 import { calculateAllPayrollLinesSafely, calculateTeachingPay, formatCurrency } from '@/lib/payroll';
 import { isNonNegativeNumericDraft, parseNumericDraft } from '@/lib/numeric-input';
 import { useAppData } from '@/lib/use-app-data';
+import { AppDataStatus } from './AppDataStatus';
 
 export function PayrollCalculationPage() {
-  const { data } = useAppData();
+  const { data, loaded, loadError, reloadData } = useAppData();
   const { lines, errors: calculationErrors } = calculateAllPayrollLinesSafely(data);
   const [teacherId, setTeacherId] = useState('');
   const [year, setYear] = useState('');
@@ -85,8 +86,11 @@ export function PayrollCalculationPage() {
   const total = filtered.reduce((sum, line) => sum + line.amount, 0);
   const years = Array.from(new Set(data.semesters.map((semester) => semester.year)));
 
+  if (!loaded) return <main className="page"><AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} /></main>;
+
   return (
     <main className="page" data-testid="payroll-page">
+      <AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} />
       <div className="page-heading compact">
         <div>
           <p className="eyebrow">UC3.4</p>

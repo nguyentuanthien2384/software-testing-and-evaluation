@@ -7,6 +7,10 @@ import { AppData, EntityKey } from './types';
 
 const STORAGE_KEY = 'n01-g11-teacher-payroll-data-v3';
 const VERSION_HEADER = 'X-State-Version';
+const emptyData: AppData = {
+  degrees: [], departments: [], teachers: [], subjects: [], semesters: [],
+  classes: [], assignments: [], paymentRates: [], degreeCoefficients: [], classCoefficients: []
+};
 
 export type SaveResult = { ok: true } | { ok: false; error: string; conflict?: boolean };
 
@@ -25,12 +29,14 @@ async function responseError(response: Response): Promise<string> {
  * localStorage là bản sao chỉ đọc khi mất kết nối, không còn tự động ghi ngược lên CSDL.
  */
 export function useAppData() {
-  const [data, setData] = useState<AppData>(initialData);
+  const [data, setData] = useState<AppData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const dataRef = useRef<AppData>(initialData);
+  const dataRef = useRef<AppData>(emptyData);
   const versionRef = useRef<string | null>(null);
+  const loadEpoch = useRef(0);
+  const loadingRef = useRef(true);
   const mutationQueue = useRef<Promise<unknown>>(Promise.resolve());
   const pendingMutations = useRef(0);
 
@@ -43,9 +49,16 @@ export function useAppData() {
   }, []);
 
   const loadData = useCallback(async () => {
+    const requestEpoch = ++loadEpoch.current;
+    loadingRef.current = true;
+    versionRef.current = null;
     setLoaded(false);
     setLoadError('');
     try {
+      // Một GET bắt đầu trước khi PUT hoàn tất có thể trả snapshot cũ.
+      await mutationQueue.current;
+      if (requestEpoch !== loadEpoch.current) return;
+      versionRef.current = null;
       const response = await fetch('/api/state', { cache: 'no-store' });
       if (!response.ok) throw new Error(await responseError(response));
       const version = response.headers.get(VERSION_HEADER);
@@ -53,38 +66,48 @@ export function useAppData() {
       const remote = await response.json() as unknown;
       const validation = validateAppData(remote);
       if (!validation.ok) throw new Error(`Dữ liệu từ máy chủ không hợp lệ: ${validation.errors[0]}`);
+      if (requestEpoch !== loadEpoch.current) return;
       const nextData = validation.data;
       versionRef.current = version;
       dataRef.current = nextData;
       setData(nextData);
       cacheData(nextData);
     } catch (error) {
+      if (requestEpoch !== loadEpoch.current) return;
       versionRef.current = null;
-      let cached = initialData;
+      let cached: AppData | null = dataRef.current === emptyData ? null : dataRef.current;
       try {
         const stored = window.localStorage.getItem(STORAGE_KEY);
-        if (stored) {
+        if (!cached && stored) {
           const validation = validateAppData(JSON.parse(stored));
           if (validation.ok) cached = validation.data;
         }
       } catch {
-        cached = initialData;
+        /* Giữ snapshot đã tải thành công trong bộ nhớ nếu localStorage không dùng được. */
       }
-      dataRef.current = cached;
-      setData(cached);
-      setLoadError(`${error instanceof Error ? error.message : 'Không thể tải dữ liệu.'} Đang hiển thị bản sao gần nhất ở chế độ chỉ đọc.`);
+      const fallback = cached ?? emptyData;
+      dataRef.current = fallback;
+      setData(fallback);
+      const notice = cached
+        ? 'Đang hiển thị bản sao gần nhất ở chế độ chỉ đọc.'
+        : 'Không có bản sao dữ liệu hợp lệ. Hãy tải lại khi có kết nối.';
+      setLoadError(`${error instanceof Error ? error.message : 'Không thể tải dữ liệu.'} ${notice}`);
     } finally {
-      setLoaded(true);
+      if (requestEpoch === loadEpoch.current) {
+        loadingRef.current = false;
+        setLoaded(true);
+      }
     }
   }, [cacheData]);
 
   useEffect(() => {
     void loadData();
+    return () => { loadEpoch.current += 1; };
   }, [loadData]);
 
   const persist = useCallback(async (nextData: AppData): Promise<SaveResult> => {
     const version = versionRef.current;
-    if (!version) return { ok: false, error: 'Chưa có kết nối với cơ sở dữ liệu. Hãy tải lại trang trước khi lưu.' };
+    if (!version || loadingRef.current) return { ok: false, error: 'Chưa có kết nối với cơ sở dữ liệu. Hãy tải lại trang trước khi lưu.' };
 
     try {
       const response = await fetch('/api/state', {
@@ -93,10 +116,20 @@ export function useAppData() {
         body: JSON.stringify(nextData)
       });
       if (!response.ok) {
-        return { ok: false, error: await responseError(response), conflict: response.status === 409 };
+        const error = await responseError(response);
+        if (response.status === 409) {
+          versionRef.current = null;
+          setLoadError(`${error} Hãy tải lại dữ liệu trước khi tiếp tục lưu.`);
+        }
+        return { ok: false, error, conflict: response.status === 409 };
       }
       const nextVersion = response.headers.get(VERSION_HEADER);
-      if (!nextVersion) return { ok: false, error: 'Máy chủ đã lưu nhưng không trả phiên bản dữ liệu mới. Hãy tải lại trang.' };
+      if (!nextVersion) {
+        const error = 'Máy chủ đã lưu nhưng không trả phiên bản dữ liệu mới. Hãy tải lại trang.';
+        versionRef.current = null;
+        setLoadError(error);
+        return { ok: false, error };
+      }
       versionRef.current = nextVersion;
       dataRef.current = nextData;
       setData(nextData);

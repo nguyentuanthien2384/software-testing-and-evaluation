@@ -43,6 +43,8 @@ const mockedPrisma = prisma as unknown as {
 };
 
 function mockDatabaseData() {
+  mockedPrisma.$transaction.mockImplementation(async (operation) =>
+    typeof operation === 'function' ? operation(mockedPrisma) : Promise.all(operation));
   mockedPrisma.degree.findMany.mockResolvedValue(initialData.degrees);
   mockedPrisma.department.findMany.mockResolvedValue(initialData.departments);
   mockedPrisma.teacher.findMany.mockResolvedValue(initialData.teachers);

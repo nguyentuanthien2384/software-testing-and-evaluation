@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SystemPage } from '../SystemPage';
 import { useAppData } from '@/lib/use-app-data';
 import { useAuth } from '@/lib/use-auth';
@@ -19,7 +19,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   resetData.mockResolvedValue({ ok: true });
   restoreData.mockResolvedValue({ ok: true });
-  mockedUseAppData.mockReturnValue({ data: initialData, resetData, restoreData, saving: false } as unknown as ReturnType<typeof useAppData>);
+  mockedUseAppData.mockReturnValue({ data: initialData, resetData, restoreData, saving: false, loaded: true, loadError: '', reloadData: jest.fn() } as unknown as ReturnType<typeof useAppData>);
   mockedUseAuth.mockReturnValue({ can: jest.fn(() => true) } as unknown as ReturnType<typeof useAuth>);
 });
 
@@ -47,9 +47,32 @@ test('khi reset thất bại hiển thị lỗi; trong lúc đang lưu nút bị
   const view = render(<SystemPage />);
   fireEvent.click(screen.getByTestId('system-reset-button'));
   await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Không thể ghi dữ liệu.'));
-  mockedUseAppData.mockReturnValue({ data: initialData, resetData, restoreData, saving: true } as unknown as ReturnType<typeof useAppData>);
+  mockedUseAppData.mockReturnValue({ data: initialData, resetData, restoreData, saving: true, loaded: true, loadError: '', reloadData: jest.fn() } as unknown as ReturnType<typeof useAppData>);
   view.rerender(<SystemPage />);
   expect((screen.getByTestId('system-reset-button') as HTMLButtonElement).disabled).toBe(true);
+  confirm.mockRestore();
+});
+
+test.each([
+  { loaded: false, loadError: '' },
+  { loaded: true, loadError: 'Mất kết nối. Đang xem bản sao.' }
+])('chặn backup/reset/restore dữ liệu mẫu hoặc chưa đồng bộ: %p', (status) => {
+  mockedUseAppData.mockReturnValue({ data: initialData, resetData, restoreData, saving: false, reloadData: jest.fn(), ...status } as unknown as ReturnType<typeof useAppData>);
+  render(<SystemPage />);
+  for (const testId of ['system-export-button', 'system-import-button', 'system-reset-button', 'system-import-input']) {
+    expect((screen.getByTestId(testId) as HTMLButtonElement | HTMLInputElement).disabled).toBe(true);
+  }
+});
+
+test('reset liên tiếp trong khi API chưa trả về chỉ gửi một lần', async () => {
+  let finishReset!: (result: { ok: true }) => void;
+  resetData.mockImplementationOnce(() => new Promise((resolve) => { finishReset = resolve; }));
+  const confirm = jest.spyOn(window, 'confirm').mockReturnValue(true);
+  render(<SystemPage />);
+  fireEvent.click(screen.getByTestId('system-reset-button'));
+  fireEvent.click(screen.getByTestId('system-reset-button'));
+  expect(resetData).toHaveBeenCalledTimes(1);
+  await act(async () => { finishReset({ ok: true }); });
   confirm.mockRestore();
 });
 

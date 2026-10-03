@@ -40,9 +40,13 @@ jobs:
         working-directory: source/teacher-payroll-app
         run: npm ci
 
-      - name: Run unit tests
+      - name: Type-check application and tests
         working-directory: source/teacher-payroll-app
-        run: npm run coverage -- --runInBand --coverageReporters=text-summary
+        run: npm run typecheck
+
+      - name: Run unit, component, API and isolated SQLite integration tests
+        working-directory: source/teacher-payroll-app
+        run: npm run coverage -- --runInBand
 
       - name: Test JMeter quality gate logic
         run: npm run test:jmeter-checker
@@ -92,6 +96,11 @@ jobs:
           curl -fsSL "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz" -o /tmp/jmeter.tgz
           tar -xzf /tmp/jmeter.tgz -C /tmp
           echo "/tmp/apache-jmeter-${JMETER_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - name: Verify JMeter assertions against correct and incorrect HTTP fixtures
+        env:
+          JMETER_HOME: /tmp/apache-jmeter-${{ env.JMETER_VERSION }}
+        run: npm run test:jmeter-assertions
 
       - name: Run YC8 JMeter baseline
         env:

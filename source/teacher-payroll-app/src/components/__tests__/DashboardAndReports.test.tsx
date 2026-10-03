@@ -17,8 +17,12 @@ jest.mock('@/lib/report-export', () => ({ buildPayrollCsv: jest.fn(() => 'test c
 const mockedUseAppData = jest.mocked(useAppData);
 const mockedBuildPayrollCsv = jest.mocked(buildPayrollCsv);
 
-function mockData(data: AppData = initialData) {
-  mockedUseAppData.mockReturnValue({ data } as ReturnType<typeof useAppData>);
+function mockData(data: AppData = initialData, overrides: Partial<ReturnType<typeof useAppData>> = {}) {
+  mockedUseAppData.mockReturnValue({
+    data, loaded: true, saving: false, loadError: '', reloadData: jest.fn(),
+    addItem: jest.fn(), addItems: jest.fn(), updateItem: jest.fn(), removeItem: jest.fn(), resetData: jest.fn(), restoreData: jest.fn(),
+    ...overrides
+  });
 }
 
 function bodyRows(testId: string): HTMLTableRowElement[] {
@@ -33,6 +37,40 @@ function cardValue(title: string): string | null {
 beforeEach(() => {
   jest.clearAllMocks();
   mockData();
+});
+
+const dataPages = [
+  ['dashboard', HomeDashboard],
+  ['payroll', PayrollCalculationPage],
+  ['reports', ReportsPage],
+  ['teacher statistics', TeacherStatisticsPage],
+  ['class statistics', ClassStatisticsPage]
+] as const;
+
+test.each(dataPages)('%s không hiện số liệu mẫu trong khi dữ liệu thật đang tải', (_name, Page) => {
+  mockData(initialData, { loaded: false });
+  render(<Page />);
+  expect(screen.getByRole('status').textContent).toContain('Đang tải dữ liệu');
+  expect(document.querySelector('.stat-card')).toBeNull();
+  expect(screen.queryByRole('table')).toBeNull();
+});
+
+test.each(dataPages)('%s cho biết dữ liệu đang xem là bản sao khi máy chủ mất kết nối', (_name, Page) => {
+  const reloadData = jest.fn();
+  mockData(initialData, { loadError: 'Mất kết nối. Đang hiển thị bản sao ở chế độ chỉ đọc.', reloadData });
+  render(<Page />);
+  expect(screen.getByRole('alert').textContent).toContain('bản sao');
+  fireEvent.click(screen.getByRole('button', { name: 'Tải lại' }));
+  expect(reloadData).toHaveBeenCalledTimes(1);
+});
+
+test('bản sao báo cáo khi offline không được xuất thành báo cáo chính thức', () => {
+  mockData(initialData, { loadError: 'Offline' });
+  render(<ReportsPage />);
+  expect((screen.getByTestId('reports-export-csv-button') as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByTestId('reports-print-button') as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(screen.getByTestId('reports-export-csv-button'));
+  expect(mockedBuildPayrollCsv).not.toHaveBeenCalled();
 });
 
 test('bảng tính tiền lọc đồng thời theo giáo viên và năm, tổng thay đổi theo bộ lọc', () => {

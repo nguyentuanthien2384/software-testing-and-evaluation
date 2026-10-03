@@ -13,6 +13,14 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function isAuthUser(value: unknown): value is AuthUser {
+  if (!value || typeof value !== 'object') return false;
+  const user = value as Partial<AuthUser>;
+  return typeof user.username === 'string' && user.username.trim().length > 0 &&
+    typeof user.displayName === 'string' && user.displayName.trim().length > 0 &&
+    (user.role === 'admin' || user.role === 'tester');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [ready, setReady] = useState(false);
@@ -25,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetch('/api/auth/session', { cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) return null;
-        const body = (await response.json()) as { user?: AuthUser };
-        return body.user ?? null;
+        const body = (await response.json()) as { user?: unknown } | null;
+        return isAuthUser(body?.user) ? body.user : null;
       })
       .catch(() => null)
       .then((sessionUser) => {
@@ -56,11 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.ok !== true && (result.ok !== false || typeof result.error !== 'string')) {
         return { ok: false, error: 'Phản hồi đăng nhập không hợp lệ.' };
       }
-      if (result.ok && (
-        !result.user || typeof result.user.username !== 'string' ||
-        typeof result.user.displayName !== 'string' ||
-        !['admin', 'tester'].includes(result.user.role)
-      )) {
+      if (result.ok && !isAuthUser(result.user)) {
         return { ok: false, error: 'Phản hồi đăng nhập không hợp lệ.' };
       }
       if (result.ok) {

@@ -3,6 +3,9 @@ import { POST as login } from '../../app/api/auth/login/route';
 import { POST as logout } from '../../app/api/auth/logout/route';
 import { GET as session } from '../../app/api/auth/session/route';
 import { GET as payrollFormula, POST as calculatePayroll } from '../../app/api/payroll/route';
+import { GET as stateData } from '../../app/api/state/route';
+import { GET as teachers } from '../../app/api/teachers/route';
+import { GET as reports } from '../../app/api/reports/route';
 import { initialData } from '../initial-data';
 import { createSessionToken, SESSION_COOKIE } from '../session';
 
@@ -22,6 +25,41 @@ function payrollRequest(body: unknown) {
 }
 
 describe('bảo vệ API', () => {
+  test.each([
+    ['state', stateData], ['teachers', teachers], ['reports', reports], ['payroll', payrollFormula], ['auth/session', session]
+  ])('GET /api/%s từ chối phiên hết hạn/bị sửa', async (path, handler) => {
+    const user = { username: 'tester', displayName: 'Tester', role: 'tester' as const };
+    const invalidTokens = [createSessionToken(user, Date.now() - 9 * 60 * 60 * 1000), `${createSessionToken(user)}.ignored`];
+    for (const token of invalidTokens) {
+      const response = await handler(new Request(`http://localhost/api/${path}`, {
+        headers: { cookie: `${SESSION_COOKIE}=${encodeURIComponent(token)}` }
+      }));
+      expect(response.status).toBe(401);
+    }
+  });
+
+  test.each([['auth/session', session], ['payroll', payrollFormula]])(
+    'GET /api/%s trả 503 khi cấu hình production secret không hợp lệ', async (path, handler) => {
+      const request = new Request(`http://localhost/api/${path}`, {
+        headers: { cookie: cookie({ username: 'tester', displayName: 'Tester', role: 'tester' }) }
+      });
+      const mutableEnv = process.env as Record<string, string | undefined>;
+      const previousEnvironment = process.env.NODE_ENV;
+      const previousSecret = process.env.AUTH_SESSION_SECRET;
+      try {
+        mutableEnv.NODE_ENV = 'production';
+        process.env.AUTH_SESSION_SECRET = 'invalid';
+        const response = await handler(request);
+        expect(response.status).toBe(503);
+        await expect(response.json()).resolves.toMatchObject({ error: expect.stringContaining('AUTH_SESSION_SECRET') });
+      } finally {
+        if (previousEnvironment === undefined) delete mutableEnv.NODE_ENV;
+        else mutableEnv.NODE_ENV = previousEnvironment;
+        if (previousSecret === undefined) delete process.env.AUTH_SESSION_SECRET;
+        else process.env.AUTH_SESSION_SECRET = previousSecret;
+      }
+    }
+  );
   test('không cho người chưa đăng nhập ghi đè dữ liệu', async () => {
     const response = await updateState(new Request('http://localhost/api/state', {
       method: 'PUT',
@@ -82,6 +120,9 @@ describe('bảo vệ API', () => {
     }));
     expect(success.status).toBe(200);
     expect(success.headers.get('set-cookie')).toContain('HttpOnly');
+    const loginBody = await success.json();
+    expect(loginBody.user).not.toHaveProperty('password');
+    expect(loginBody).not.toHaveProperty('password');
 
     const failure = await login(new Request('http://localhost/api/auth/login', {
       method: 'POST',

@@ -1,5 +1,5 @@
 import { AppData, EntityKey } from './types';
-import { validateTeacher } from './payroll';
+import { calculateTeachingPay, findDegreeCoefficient, validateTeacher } from './payroll';
 
 const ENTITY_KEYS: EntityKey[] = [
   'degrees', 'departments', 'teachers', 'subjects', 'semesters',
@@ -68,7 +68,7 @@ function isValidIsoDate(value: unknown): value is string {
 
 export function isValidAcademicYear(value: unknown): value is string {
   if (typeof value !== 'string') return false;
-  const match = /^(\d{4})-(\d{4})$/.exec(value.trim());
+  const match = /^(\d{4})-(\d{4})$/.exec(value);
   return Boolean(match && Number(match[2]) === Number(match[1]) + 1);
 }
 
@@ -249,6 +249,38 @@ export function validateAppData(input: unknown): ValidationResult {
     }
     if (teachingClass && semester && !classCoefficient) {
       errors.push(`${assignment.id}: chưa thiết lập hệ số lớp cho sĩ số ${teachingClass.studentCount} trong năm học ${semester.year}.`);
+    }
+  }
+
+  // Check numerical results for fully configured assignments. Annual degree
+  // settings can still be entered one row at a time; payroll reports missing
+  // settings until that configuration is complete.
+  if (errors.length === 0) {
+    for (const assignment of data.assignments) {
+      const teachingClass = data.classes.find((item) => item.id === assignment.classId)!;
+      const teacher = data.teachers.find((item) => item.id === assignment.teacherId)!;
+      const subject = data.subjects.find((item) => item.id === teachingClass.subjectId)!;
+      const semester = data.semesters.find((item) => item.id === teachingClass.semesterId)!;
+      const rate = data.paymentRates.find((item) => item.year === semester.year)!;
+      const classCoefficient = data.classCoefficients.find((item) => item.year === semester.year &&
+        teachingClass.studentCount >= item.minStudents && teachingClass.studentCount <= item.maxStudents)!;
+      let degreeCoefficient: number;
+      try {
+        degreeCoefficient = findDegreeCoefficient(data, teacher.degreeId, semester.year);
+      } catch {
+        continue;
+      }
+      try {
+        calculateTeachingPay({
+          hours: assignment.teachingHours,
+          subjectCoef: subject.coefficient,
+          classCoef: classCoefficient.coefficient,
+          rate: rate.amount,
+          degreeCoef: degreeCoefficient
+        });
+      } catch (error) {
+        errors.push(`${assignment.id}: ${error instanceof Error ? error.message : 'Không thể tính tiền dạy.'}`);
+      }
     }
   }
 

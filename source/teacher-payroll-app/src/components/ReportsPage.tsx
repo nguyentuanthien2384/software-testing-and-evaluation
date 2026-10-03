@@ -5,9 +5,10 @@ import { calculateAllPayrollLinesSafely, formatCurrency, groupAmountBy, sumAmoun
 import { useAppData } from '@/lib/use-app-data';
 import { buildPayrollCsv } from '@/lib/report-export';
 import { StatCard } from './StatCard';
+import { AppDataStatus } from './AppDataStatus';
 
 export function ReportsPage() {
-  const { data } = useAppData();
+  const { data, loaded, loadError, reloadData } = useAppData();
   const [year, setYear] = useState('');
   const [department, setDepartment] = useState('');
   const [teacherId, setTeacherId] = useState('');
@@ -31,6 +32,7 @@ export function ReportsPage() {
   }, [filtered]);
 
   function exportCsv() {
+    if (!loaded || loadError) return;
     const blob = new Blob([buildPayrollCsv(filtered)], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -40,8 +42,11 @@ export function ReportsPage() {
     URL.revokeObjectURL(url);
   }
 
+  if (!loaded) return <main className="page"><AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} /></main>;
+
   return (
     <main className="page" data-testid="reports-page">
+      <AppDataStatus loaded={loaded} loadError={loadError} reloadData={reloadData} />
       <div className="page-heading compact">
         <div>
           <p className="eyebrow">UC4.1 - UC4.3</p>
@@ -49,8 +54,8 @@ export function ReportsPage() {
           <p>Báo cáo theo giáo viên trong năm, theo khoa và toàn trường.</p>
         </div>
         <div className="actions">
-          <button className="ghost-btn" data-testid="reports-print-button" type="button" onClick={() => window.print()}>In / lưu PDF</button>
-          <button className="primary-btn" data-testid="reports-export-csv-button" type="button" onClick={exportCsv}>Xuất CSV</button>
+          <button className="ghost-btn" data-testid="reports-print-button" type="button" disabled={Boolean(loadError)} onClick={() => window.print()}>In / lưu PDF</button>
+          <button className="primary-btn" data-testid="reports-export-csv-button" type="button" disabled={Boolean(loadError)} onClick={exportCsv}>Xuất CSV</button>
         </div>
       </div>
 

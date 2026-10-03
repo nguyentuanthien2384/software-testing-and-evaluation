@@ -39,8 +39,10 @@ export function createSessionToken(user: AuthUser, now = Date.now()): string {
 }
 
 export function verifySessionToken(token: string, now = Date.now()): AuthUser | null {
-  const [encoded, receivedSignature, extra] = token.split('.');
-  if (!encoded || !receivedSignature || extra) return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [encoded, receivedSignature] = parts;
+  if (!encoded || !receivedSignature) return null;
 
   const expectedSignature = sign(encoded);
   const actualBuffer = Buffer.from(receivedSignature);

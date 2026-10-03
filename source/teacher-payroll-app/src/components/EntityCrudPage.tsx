@@ -50,8 +50,10 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Row>(() => buildEmptyRow(fields, entityKey, rows, idPrefix));
   const [message, setMessage] = useState<string>('');
+  const [operationPending, setOperationPending] = useState(false);
   const [batchCount, setBatchCount] = useState('1');
   const formDirty = useRef(false);
+  const formIdDirty = useRef(false);
   const submitPending = useRef(false);
   const rejectedNumericFields = useRef(new Set<string>());
   const rejectedBatchInput = useRef(false);
@@ -59,6 +61,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
   const [copyTargetYear, setCopyTargetYear] = useState('');
 
   const visibleFields = fields.filter((field) => !field.tableOnly);
+  const busy = saving || operationPending || !loaded || Boolean(loadError);
 
   const filteredRows = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -68,8 +71,14 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
 
   // Tạo mã dựa trên dữ liệu thật sau khi API hoàn tất, tránh trùng mã từ dữ liệu mẫu ban đầu.
   useEffect(() => {
-    if (loaded && !editingId && !formDirty.current) setForm(buildEmptyRow(fields, entityKey, rows, idPrefix));
-  }, [loaded, rows, editingId, fields, entityKey, idPrefix]);
+    if (!loaded || editingId || operationPending) return;
+    setForm((current) => {
+      if (!formDirty.current) return buildEmptyRow(fields, entityKey, rows, idPrefix);
+      if (formIdDirty.current) return current;
+      const id = createId(entityKey, rows, idPrefix);
+      return current.id === id ? current : { ...current, id };
+    });
+  }, [loaded, rows, editingId, fields, entityKey, idPrefix, operationPending]);
 
   const coefficientYears = useMemo(
     () => Array.from(new Set(data.degreeCoefficients.map((item) => item.year))).sort(),
@@ -85,6 +94,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
 
   function startCreate(options?: { keepMessage?: boolean }) {
     formDirty.current = false;
+    formIdDirty.current = false;
     rejectedNumericFields.current.clear();
     rejectedBatchInput.current = false;
     setEditingId(null);
@@ -104,6 +114,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
     event.preventDefault();
     if (submitPending.current) return;
     submitPending.current = true;
+    setOperationPending(true);
     try {
       if (!canManage) {
         setMessage('Bạn không có quyền thay đổi dữ liệu (chỉ tài khoản quản trị viên).');
@@ -114,6 +125,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
         return;
       }
       const normalized = normalizeRow(form, visibleFields);
+      if (!editingId && !formIdDirty.current) normalized.id = createId(entityKey, rows, idPrefix);
       const errors = validateRow(normalized, visibleFields);
       const normalizedBatchCount = parseNumericDraft(batchCount);
       if (!editingId && allowBulkCreate && entityKey === 'classes' && normalizedBatchCount !== 1) {
@@ -163,10 +175,12 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
       startCreate({ keepMessage: true });
     } finally {
       submitPending.current = false;
+      setOperationPending(false);
     }
   }
 
   async function handleDelete(row: Row) {
+    if (submitPending.current || !loaded || saving || loadError) return;
     if (!canManage) {
       setMessage('Bạn không có quyền xoá dữ liệu (chỉ tài khoản quản trị viên).');
       return;
@@ -177,18 +191,25 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
       return;
     }
     if (window.confirm('Bạn có chắc muốn xoá bản ghi này?')) {
-      const result = await removeItem(entityKey, row.id);
-      if (!result.ok) {
-        setMessage(result.error);
-        return;
+      submitPending.current = true;
+      setOperationPending(true);
+      try {
+        const result = await removeItem(entityKey, row.id);
+        if (!result.ok) {
+          setMessage(result.error);
+          return;
+        }
+        if (editingId === row.id) startCreate();
+        setMessage('Đã xoá dữ liệu.');
+      } finally {
+        submitPending.current = false;
+        setOperationPending(false);
       }
-      setMessage('Đã xoá dữ liệu.');
-      if (editingId === row.id) startCreate();
     }
   }
 
   async function handleCopyCoefficients() {
-    if (!canManage || saving) return;
+    if (!canManage || !loaded || loadError || saving || submitPending.current) return;
     const copy = copyDegreeCoefficients(data, copySourceYear, copyTargetYear);
     if (!copy.ok) {
       setMessage(copy.error);
@@ -202,8 +223,15 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
       setMessage(validation.errors.join(' '));
       return;
     }
-    const result = await addItems('degreeCoefficients', copy.coefficients);
-    setMessage(result.ok ? `Đã sao chép ${copy.coefficients.length} hệ số sang năm ${copyTargetYear}.` : result.error);
+    submitPending.current = true;
+    setOperationPending(true);
+    try {
+      const result = await addItems('degreeCoefficients', copy.coefficients);
+      setMessage(result.ok ? `Đã sao chép ${copy.coefficients.length} hệ số sang năm ${copyTargetYear}.` : result.error);
+    } finally {
+      submitPending.current = false;
+      setOperationPending(false);
+    }
   }
 
   return (
@@ -227,13 +255,13 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
           <div className="panel">
             <div className="panel-title-row">
               <h2>{editingId ? 'Chỉnh sửa' : 'Thêm mới'}</h2>
-              <button className="ghost-btn" data-testid={`${entityKey}-new-button`} type="button" onClick={() => startCreate()}>Tạo mới</button>
+              <button className="ghost-btn" data-testid={`${entityKey}-new-button`} type="button" disabled={busy} onClick={() => startCreate()}>Tạo mới</button>
             </div>
             <form className="form-grid" data-testid={`${entityKey}-form`} onSubmit={handleSubmit}>
               {visibleFields.map((field) => (
                 <label className={field.type === 'textarea' ? 'full' : ''} key={field.name}>
                   {field.label}
-                  {renderField(field, form, (row) => { formDirty.current = true; setForm(row); }, data, saving || !loaded || Boolean(loadError) || (Boolean(editingId) && field.name === 'id'), rejectedNumericFields)}
+                  {renderField(field, form, (row) => { formDirty.current = true; if (row.id !== form.id) formIdDirty.current = true; setForm(row); }, data, busy || (Boolean(editingId) && field.name === 'id'), rejectedNumericFields)}
                 </label>
               ))}
               {allowBulkCreate && !editingId && (
@@ -251,7 +279,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
                     step="1"
                     required
                     value={batchCount}
-                    disabled={saving || !loaded || Boolean(loadError)}
+                    disabled={busy}
                     onChange={(event) => {
                       const raw = event.target.value;
                       if (raw.includes('-')) {
@@ -271,7 +299,7 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
                   />
                 </label>
               )}
-              <button className="primary-btn full" data-testid={`${entityKey}-submit-button`} type="submit" disabled={saving || !loaded || Boolean(loadError)}>{saving ? 'Đang lưu...' : editingId ? 'Cập nhật' : 'Thêm'}</button>
+              <button className="primary-btn full" data-testid={`${entityKey}-submit-button`} type="submit" disabled={busy}>{saving || operationPending ? 'Đang lưu...' : editingId ? 'Cập nhật' : 'Thêm'}</button>
             </form>
             {message && <p data-testid={`${entityKey}-form-message`} className={message.includes('thành công') || message.includes('Đã') ? 'success-message' : 'error-message'}>{message}</p>}
             {allowCopyPreviousYear && (
@@ -279,15 +307,15 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
                 <h3>Sao chép từ năm trước</h3>
                 <label>
                   Năm nguồn
-                  <select data-testid="degree-coefficients-copy-source" value={copySourceYear} disabled={saving} onChange={(event) => { setCopySourceYear(event.target.value); setCopyTargetYear(nextAcademicYear(event.target.value)); }}>
+                  <select data-testid="degree-coefficients-copy-source" value={copySourceYear} disabled={busy} onChange={(event) => { setCopySourceYear(event.target.value); setCopyTargetYear(nextAcademicYear(event.target.value)); }}>
                     {coefficientYears.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </label>
                 <label>
                   Năm đích
-                  <input data-testid="degree-coefficients-copy-target" value={copyTargetYear} disabled={saving} onChange={(event) => setCopyTargetYear(event.target.value)} placeholder="YYYY-YYYY" />
+                  <input data-testid="degree-coefficients-copy-target" value={copyTargetYear} disabled={busy} onChange={(event) => setCopyTargetYear(event.target.value)} placeholder="YYYY-YYYY" />
                 </label>
-                <button className="ghost-btn" data-testid="degree-coefficients-copy-button" type="button" disabled={saving || !loaded || Boolean(loadError)} onClick={() => void handleCopyCoefficients()}>Sao chép hệ số</button>
+                <button className="ghost-btn" data-testid="degree-coefficients-copy-button" type="button" disabled={busy} onClick={() => void handleCopyCoefficients()}>Sao chép hệ số</button>
               </div>
             )}
           </div>
@@ -320,8 +348,8 @@ export function EntityCrudPage({ entityKey, title, description, fields, idPrefix
                     {fields.map((field) => <td key={field.name}>{displayValue(field, row[field.name], data, entityKey, row)}</td>)}
                     {canManage && (
                       <td className="actions">
-                        <button type="button" data-testid={`${entityKey}-edit-${row.id}`} onClick={() => startEdit(row)}>Sửa</button>
-                        <button className="danger" data-testid={`${entityKey}-delete-${row.id}`} type="button" onClick={() => handleDelete(row)}>Xoá</button>
+                        <button type="button" data-testid={`${entityKey}-edit-${row.id}`} disabled={busy} onClick={() => startEdit(row)}>Sửa</button>
+                        <button className="danger" data-testid={`${entityKey}-delete-${row.id}`} type="button" disabled={busy} onClick={() => void handleDelete(row)}>Xoá</button>
                       </td>
                     )}
                   </tr>
@@ -455,6 +483,7 @@ function buildEmptyRow(fields: FieldConfig[], entityKey: EntityKey, rows: Row[],
 }
 
 function createId(entityKey: EntityKey, rows: Row[], prefix: string): string {
+  if (entityKey === 'teachers') return generateNextTeacherCode(rows);
   const next = rows.length + 1;
   const candidate = `${prefix}-${String(next).padStart(3, '0')}`;
   if (!rows.some((row) => row.id === candidate)) return candidate;

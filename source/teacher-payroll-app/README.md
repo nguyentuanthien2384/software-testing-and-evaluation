@@ -35,7 +35,16 @@ Các tính năng chính gồm CRUD danh mục có kiểm tra nghiệp vụ, tạ
 ```bash
 npm test
 npm run coverage
+npm run test:unit
+npm run test:integration
+npm run typecheck
 ```
+
+`npm test` chạy cả unit/component/API và kiểm thử tích hợp SQLite thật. Suite
+`repository.integration.test.ts` tự tạo CSDL tạm, chạy migration và dọn sau test;
+không dùng `prisma/dev.db`. Có thể chạy `npm run qa:check` từ thư mục gốc để
+kiểm tra TypeScript, toàn bộ Jest/coverage và logic gate JMeter trong một lệnh.
+Coverage đo toàn bộ source runtime, có gate riêng cho lib, API và component.
 
 ## Chạy YC7 Selenium WebDriver
 
