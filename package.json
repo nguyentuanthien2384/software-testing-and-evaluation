@@ -13,6 +13,7 @@
     "qa:check": "npm run typecheck && npm run coverage -- --runInBand && npm run test:jmeter-checker",
     "test:jmeter-checker": "node --test tests/jmeter/check-thresholds.test.mjs",
     "test:jmeter-assertions": "node --test tests/jmeter/payroll-assertions.integration.test.mjs",
+    "test:script-runners": "node --test tests/scripts/run-yc8.test.mjs",
     "test:sqlite-evidence": "python evidence/db-sqlite/verify_sqlite.py --check-only",
     "coverage": "npm --prefix source/teacher-payroll-app run coverage --",
     "yc7:install": "npm install --prefix tests/selenium-js",

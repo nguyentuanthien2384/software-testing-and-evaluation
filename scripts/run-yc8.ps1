@@ -80,6 +80,12 @@ Write-Host "==> Chạy JMeter (non-GUI)..." -ForegroundColor Cyan
   -l $resultFile `
   -e -o $htmlDir
 
+$jmeterExitCode = $LASTEXITCODE
+if ($jmeterExitCode -ne 0) {
+  Write-Host "JMeter failed with exit code $jmeterExitCode. Performance gate was not run." -ForegroundColor Red
+  exit $jmeterExitCode
+}
+
 Write-Host "==> Chấm ngưỡng hiệu năng..." -ForegroundColor Cyan
 node (Join-Path $jmeterDir "check-thresholds.mjs") `
   --file $resultFile `

@@ -1,0 +1,153 @@
+{
+  "testRunDate": "2026-10-03",
+  "reviewedDate": "2026-10-04",
+  "timezone": "Asia/Bangkok",
+  "sourceCommit": "12642fc",
+  "sourceState": "Application verification corresponds to the commit above; QA harness fixes were additionally verified on 2026-10-04.",
+  "baseline": {
+    "jestSuites": 25,
+    "jestTests": 341,
+    "jmeterCheckerTests": 5
+  },
+  "verification": {
+    "typescript": "passed",
+    "productionBuild": "passed",
+    "qaHarness": {
+      "powershellRunnerRegressionTestsPassed": 3,
+      "bashRunnerSyntax": "passed",
+      "bashSessionSecretRuntime": "passed: generates 64 hex characters and preserves an explicit QA override; Windows Node forwarded into WSL because WSL has no Node installation.",
+      "powershellRunnerSyntax": "passed",
+      "localProductionSessionSecret": "Disposable random QA secret; .env is not modified."
+    },
+    "jest": {
+      "suites": 29,
+      "passed": 471,
+      "failed": 0,
+      "addedTests": 130,
+      "sqliteIntegrationTests": 7
+    },
+    "jmeterChecker": {
+      "passed": 17,
+      "failed": 0
+    },
+    "jmeterAssertionFixtures": {
+      "plans": 2,
+      "passedTests": 2,
+      "numericResponseFixtures": 14,
+      "failedTests": 0
+    },
+    "selenium": {
+      "passed": 24,
+      "failed": 0
+    },
+    "coverage": {
+      "scope": "All src/**/*.ts and src/**/*.tsx except tests and type declarations",
+      "statementsPercent": 89.88,
+      "branchesPercent": 85.77,
+      "functionsPercent": 92.35,
+      "linesPercent": 93.67,
+      "layerGates": "passed"
+    },
+    "concurrentLoad": {
+      "samples": 15050,
+      "avgMs": 112.75,
+      "p95Ms": 200,
+      "errorRatePercent": 0,
+      "throughputPerSecond": 423.28,
+      "durationSeconds": 35.556,
+      "latestSampleAt": "2026-10-03T14:43:21.279Z",
+      "expectedSamples": 15050,
+      "expectedLabelCounts": {
+        "POST /api/auth/login": 50,
+        "GET /api/health": 5000,
+        "POST /api/payroll": 5000,
+        "GET /api/reports": 5000
+      },
+      "endpointMetrics": {
+        "POST /api/auth/login": {
+          "samples": 50,
+          "avgMs": 21.9,
+          "p95Ms": 65,
+          "errorRatePercent": 0,
+          "throughputPerSecond": 1.41
+        },
+        "GET /api/health": {
+          "samples": 5000,
+          "avgMs": 82.39,
+          "p95Ms": 108,
+          "errorRatePercent": 0,
+          "throughputPerSecond": 140.62
+        },
+        "POST /api/payroll": {
+          "samples": 5000,
+          "avgMs": 82.35,
+          "p95Ms": 109,
+          "errorRatePercent": 0,
+          "throughputPerSecond": 140.62
+        },
+        "GET /api/reports": {
+          "samples": 5000,
+          "avgMs": 174.43,
+          "p95Ms": 236,
+          "errorRatePercent": 0,
+          "throughputPerSecond": 140.62
+        }
+      },
+      "configuredUsers": 50,
+      "peakActiveThreads": 50,
+      "uniqueUserThreads": 50,
+      "rampSeconds": 1,
+      "loops": 100,
+      "rawEvidence": "concurrent-keepalive-results.jtl",
+      "gateVerification": "Retrospective check on 2026-10-04; artifact freshness deliberately disabled for this historical run.",
+      "thresholds": {
+        "maxAverage": 1000,
+        "maxP95": 2000,
+        "maxErrorRate": 1,
+        "minThroughput": 10,
+        "maxArtifactAgeMinutes": 0
+      }
+    }
+  },
+  "diagnosticArtifacts": [
+    {
+      "file": "jmeter-results.jtl",
+      "kind": "Earlier 50-thread baseline with 20-second ramp; peak active threads was 1. Do not interpret as 50 simultaneous users."
+    },
+    {
+      "file": "concurrent-results.jtl",
+      "kind": "Diagnostic run before enabling HTTP keep-alive; 216 client-side BindException errors. Superseded by concurrent-keepalive-results.jtl."
+    }
+  ],
+  "fixes": [
+    "Exact decimal multiplication and two-stage payroll rounding; reject unsafe monetary results.",
+    "Academic-year consistency, coefficient-copy ID collisions and strict backup timestamps.",
+    "Canonical state version and atomic SQLite version-check/write across API instances.",
+    "Consistent snapshot reads using batch transactions; regression for 50 concurrent reads.",
+    "Reject malformed session token suffixes and validate reports year filters.",
+    "Prevent stale GET responses and stale write versions; preserve drafts during errors and conflicts.",
+    "Show loading/offline status; prevent demo data from masquerading as live/cache data.",
+    "Lock duplicate CRUD/reset actions and regenerate IDs from successfully persisted rows.",
+    "Strict CSV evidence validation, multiline fields and unrounded performance-threshold decisions.",
+    "Exact JSON numeric assertions in both JMeter plans and HTTP connection reuse.",
+    "Disposable local QA session secret and PowerShell JMeter runner fail-fast behavior."
+  ],
+  "limitations": [
+    "Selenium covers smoke/regression flows against demo fixtures, not every production workflow.",
+    "Performance measurements are from the local machine and this workload.",
+    "Semester locks protect classes and assignments; they do not freeze rates/coefficients or store finalized historical payroll."
+  ],
+  "rerunCommands": [
+    "npm run qa:check",
+    "npm run test:unit",
+    "npm run test:integration",
+    "npm run test:jmeter-assertions",
+    "npm run test:script-runners"
+  ],
+  "dataIsolation": "SQLite integration and browser/load validation used disposable databases; prisma/dev.db was not modified.",
+  "cleanup": {
+    "qaServerOnPort3107": "not running",
+    "temporaryDatabaseDirectory": "C:/Users/Admin/AppData/Local/Temp/teacher-payroll-audit-hJKwPb",
+    "temporaryDatabaseCleanup": "Automatic approval review blocked both recursive and explicit file cleanup commands with 'blocked by policy'; no specific reason was provided. Directory retained."
+  }
+}

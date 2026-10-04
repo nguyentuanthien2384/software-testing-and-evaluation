@@ -10,7 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-SQLite-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
 [![Jest](https://img.shields.io/badge/Jest-Unit%20Tests-C21325?style=flat-square&logo=jest)](https://jestjs.io/)
-[![Selenium](https://img.shields.io/badge/Selenium%20WebDriver-YC7%20PASS%20(22%2F22)-43B02A?style=flat-square&logo=selenium)](https://www.selenium.dev/)
+[![Selenium](https://img.shields.io/badge/Selenium%20WebDriver-YC7%20PASS%20(24%2F24)-43B02A?style=flat-square&logo=selenium)](https://www.selenium.dev/)
 [![Apache JMeter](https://img.shields.io/badge/JMeter-YC8%20Gate%20PASSED-D22128?style=flat-square&logo=apachejmeter)](https://jmeter.apache.org/)
 [![CI/CD](https://img.shields.io/badge/GitHub%20Actions-CI%20Ready-2088FF?style=flat-square&logo=github-actions)](https://github.com/)
 
@@ -327,6 +327,11 @@ Gate theo từng tầng (câu lệnh / nhánh / hàm / dòng):
 
 Các page bọc component và layout vẫn hiện trong báo cáo coverage; chúng được xác minh thêm bằng build và Selenium, không áp gate unit riêng. Jest chỉ transpile TypeScript, vì vậy `typecheck` là bước độc lập bắt buộc trong CI. `npm test` và `npm run coverage` chạy cả tích hợp SQLite; `test:unit` và `test:integration` dùng để chạy riêng từng lớp.
 
+`npm run test:script-runners` kiểm tra runner PowerShell trong thư mục tạm bằng
+JMeter giả và HTTP fixture: JMeter lỗi phải dừng ngay, không bị kết quả checker
+ghi đè. Dùng Windows PowerShell hoặc `pwsh` trên Linux/macOS; có thể chỉ định
+`POWERSHELL_BIN`. Test này không chạy tải hay sửa bằng chứng hiện có.
+
 Test pass và coverage cao chưa chứng minh mọi tình huống vận hành đều đúng. Selenium hiện là smoke/regression trên dữ liệu demo; JMeter hiện đo ba API đọc/tính với tải cấu hình. Quy tắc khóa kỳ đang bảo vệ lớp và phân công, chưa đóng băng đơn giá/hệ số hoặc lưu bảng lương lịch sử đã chốt. Muốn nghiệm thu cơ chế chốt tiền bất biến cần bổ sung đặc tả và test riêng cho nghiệp vụ đó.
 
 ---
@@ -401,6 +406,9 @@ Hệ thống tích hợp công cụ kiểm định chất lượng hiệu năng 
 ```bash
 npm run qa:yc7-yc8
 ```
+
+Pipeline local tự tạo secret phiên đăng nhập tạm cho server kiểm thử production,
+không sửa `.env`; có thể đặt `QA_AUTH_SESSION_SECRET` để dùng secret QA riêng.
 
 ---
 

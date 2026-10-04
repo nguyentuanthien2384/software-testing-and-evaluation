@@ -28,6 +28,10 @@ npm run typecheck
 npm run coverage -- --runInBand
 node --test "$PROJECT_ROOT/tests/jmeter/check-thresholds.test.mjs"
 
+# This production test server uses a disposable session secret, independently
+# of the developer's .env. A caller can provide an explicit QA-only override.
+export AUTH_SESSION_SECRET="${QA_AUTH_SESSION_SECRET:-$(node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))")}"
+
 # The combined local QA command must never mutate prisma/dev.db. Build a fresh,
 # disposable database unless the caller deliberately supplies QA_DATABASE_URL.
 if [[ -n "${QA_DATABASE_URL:-}" ]]; then

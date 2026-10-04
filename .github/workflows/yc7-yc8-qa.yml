@@ -51,6 +51,11 @@ jobs:
       - name: Test JMeter quality gate logic
         run: npm run test:jmeter-checker
 
+      - name: Verify PowerShell runner fail-fast behavior
+        env:
+          POWERSHELL_BIN: pwsh
+        run: npm run test:script-runners
+
       - name: Verify checked-in SQLite evidence
         run: npm run test:sqlite-evidence
 
