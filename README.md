@@ -391,8 +391,17 @@ Hệ thống tích hợp công cụ kiểm định chất lượng hiệu năng 
 
 #### Mở JMeter ở chế độ Giao diện (GUI Mode để quan sát trực quan):
 ```powershell
+# Cách 1: từ PowerShell (gốc dự án)
 ./scripts/open-jmeter-gui.ps1
+
+# Cách 2: từ terminal bất kỳ (cmd / PowerShell)
+scripts\open-jmeter-gui.cmd
+
+# Cách 3: qua npm
+npm run jmeter:gui
 ```
+
+Script sẽ tự mở JMeter GUI và nạp sẵn test plan YC8 (`tests/jmeter/teacher_payroll_baseline.jmx`) cùng toàn bộ cấu hình YC8 (`user.properties`, users=50, ramp=20, loops=10, data CSV). Chỉ cần bấm **Start (▶)** để chạy; muốn xem số liệu thì thêm Listener: chuột phải Test Plan → Add → Listener → **Summary Report** / **View Results Tree**.
 
 - **File kết quả chi tiết:** `evidence/jmeter-results/yc8-payroll-results.jtl`
 - **Báo cáo HTML Dashboard tương tác:** `evidence/jmeter-results/html-report/index.html`

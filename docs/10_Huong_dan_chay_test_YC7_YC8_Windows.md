@@ -130,11 +130,16 @@ Sau đó dùng `-JMeterBin "tools\apache-jmeter-5.6.3\bin\jmeter.bat"`.
 
 ### YC8 - JMeter GUI (khuyến nghị)
 
-Mở JMeter ở chế độ giao diện, nạp sẵn test plan:
+Mở JMeter ở chế độ giao diện, nạp sẵn test plan YC8 kèm cấu hình YC8 (users/ramp/loops, CSV, user.properties):
 
 ```powershell
+# PowerShell (gốc dự án)
 ./scripts/open-jmeter-gui.ps1
-# hoặc
+# terminal bất kỳ (cmd/PowerShell)
+scripts\open-jmeter-gui.cmd
+# hoặc qua npm
+npm run jmeter:gui
+# hoặc gọi thẳng JMeter
 tools\apache-jmeter-5.6.3\bin\jmeter.bat -t tests\jmeter\teacher_payroll_baseline.jmx
 ```
 

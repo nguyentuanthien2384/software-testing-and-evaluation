@@ -19,6 +19,7 @@
     "yc7:install": "npm install --prefix tests/selenium-js",
     "yc7:test": "npm run test:junit --prefix tests/selenium-js",
     "yc8:test": "bash tests/jmeter/run-yc8.sh",
+    "jmeter:gui": "scripts\\open-jmeter-gui.cmd",
     "qa:yc7-yc8": "bash scripts/run-yc7-yc8.sh"
   }
 }
